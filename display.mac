@@ -1,0 +1,8 @@
+# These macro commands change the colours of the respective logical volume
+#
+/vis/geometry/set/forceSolid PanelLV
+/vis/geometry/set/forceSolid FiberLV
+/vis/geometry/set/colour PanelLV   1 192 192 192 0.5
+/vis/geometry/set/colour FiberLV   1 255 0 0  0.8
+#/vis/geometry/set/colour fiberLoop_WLSfibre  1 255 0 0  0.8
+#/vis/geometry/set/colour fiberCladding_FiberCladding  1 0 100 255  0.5
