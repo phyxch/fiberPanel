@@ -205,43 +205,64 @@ G4VPhysicalVolume* FPDetectorConstruction::Construct()
   //
   const G4int NUM = 2;
   G4double Ephoton[NUM] = {2.00*eV, 3.47*eV};   // TO match the photon energy range as defined in the gdml file
-  G4double RefractiveIndex[NUM] = {1.58, 1.58};
+  G4double RefractiveIndex_Panel[NUM] = {1.58, 1.58};
+  G4double RefractiveIndex_Air[NUM] = {1.0, 1.0};
   //  G4double SpecularLobe[NUM]    = {0.3, 0.3};
   //  G4double SpecularSpike[NUM]   = {0.2, 0.2};
   //  G4double Backscatter[NUM]     = {0.2, 0.2};       // need to check these values
   
   // Adjusted for scintillator panel
-  G4double PanelReflect[NUM]      = { 0.95, 0.95 };     // changed from 0.95, 0.95 to 0.85, 0.98
+  G4double PanelReflect[NUM]      = {0.95, 0.95};     // changed from 0.95, 0.95 to 0.85, 0.98
+  G4double AirReflect[NUM]      = {0.98, 0.98}; 
   
-  G4MaterialPropertiesTable *AirFibre = new G4MaterialPropertiesTable();
-  AirFibre->AddProperty("RINDEX", Ephoton, RefractiveIndex, NUM);
-  AirFibre->AddProperty("REFLECTIVITY", Ephoton, PanelReflect, NUM);       // REFLECTIVITY seems very important!
+  G4MaterialPropertiesTable *Fiber = new G4MaterialPropertiesTable();
+  Fiber->AddProperty("RINDEX", Ephoton, RefractiveIndex_Panel, NUM);
+  Fiber->AddProperty("REFLECTIVITY", Ephoton, PanelReflect, NUM);      
   
-  G4MaterialPropertiesTable *AirPanel = new G4MaterialPropertiesTable();
-  AirPanel->AddProperty("RINDEX", Ephoton, RefractiveIndex, NUM);
-  AirPanel->AddProperty("REFLECTIVITY", Ephoton, PanelReflect, NUM);       // REFLECTIVITY seems very important!
+  G4MaterialPropertiesTable *Panel = new G4MaterialPropertiesTable();
+  Panel->AddProperty("RINDEX", Ephoton, RefractiveIndex_Panel, NUM);
+  Panel->AddProperty("REFLECTIVITY", Ephoton, PanelReflect, NUM);
+  
+  G4MaterialPropertiesTable *Air = new G4MaterialPropertiesTable();
+  Air->AddProperty("RINDEX", Ephoton, RefractiveIndex_Air, NUM);
+  Air->AddProperty("REFLECTIVITY", Ephoton, AirReflect, NUM);     
   
   // Optical surfaces and boundaries
   //
-  G4OpticalSurface *OpticalAirPanel = new G4OpticalSurface("AirPanelSurface");
-  OpticalAirPanel->SetModel(unified);
-  OpticalAirPanel->SetType(dielectric_dielectric);
-  //OpticalAirPanel->SetFinish(polishedfrontpainted);    // polishdfrontpainted: only reflection, absorption and no refraction
-  OpticalAirPanel->SetFinish(polished);    // polishd: follows Snell's law
-  OpticalAirPanel->SetMaterialPropertiesTable(AirPanel);
-  
-  G4OpticalSurface *OpticalAirFiber = new G4OpticalSurface("AirFiberSurface");
-  OpticalAirFiber->SetModel(unified);
-  OpticalAirFiber->SetType(dielectric_dielectric);
-  OpticalAirFiber->SetFinish(polished);    // polishdfronpainted: only reflection, absorption and no refraction
-  //   OpticalAirFibre->SetFinish(polished);    // polished: follows Snell's law
-  OpticalAirFiber->SetMaterialPropertiesTable(AirFibre);
+  // For Panel
+  G4OpticalSurface *OpticalPanel = new G4OpticalSurface("PanelSurface");
+  OpticalPanel->SetModel(unified);
+  OpticalPanel->SetType(dielectric_dielectric);
+  //OpticalPanel->SetFinish(polishedfrontpainted);    // polishdfrontpainted: only reflection, absorption and no refraction
+  OpticalPanel->SetFinish(polished);    // polishd: follows Snell's law
+  OpticalPanel->SetMaterialPropertiesTable(Panel);
 
+  // For Panel
+  G4OpticalSurface *OpticalFiber = new G4OpticalSurface("FiberSurface");
+  OpticalFiber->SetModel(unified);
+  OpticalFiber->SetType(dielectric_dielectric);
+  OpticalFiber->SetFinish(polished);    // polishdfronpainted: only reflection, absorption and no refraction
+  //   OpticalAirFiber->SetFinish(polished);    // polished: follows Snell's law
+  OpticalFiber->SetMaterialPropertiesTable(Fiber);
+
+  // For Air
+  G4OpticalSurface *OpticalAir = new G4OpticalSurface("AirSurface");
+  OpticalAir->SetModel(unified);
+  OpticalAir->SetType(dielectric_dielectric);
+  OpticalAir->SetFinish(polished);    // polishdfronpainted: only reflection, absorption and no refraction
+  //   OpticalAirFiber->SetFinish(polished);    // polished: follows Snell's law
+  OpticalAir->SetMaterialPropertiesTable(Air);
+
+  // Set the material properties for the optics
+  panel_mat->SetMaterialPropertiesTable(Panel);
+  fiber_mat->SetMaterialPropertiesTable(Fiber);
+  default_mat->SetMaterialPropertiesTable(Air);    // Air
+  
   // Optical border surface
   //
-  new G4LogicalBorderSurface("Air/Fibre",  WorldPV, FiberPV,  OpticalAirFiber); 
-  new G4LogicalBorderSurface("Panel/Air", WorldPV, PanelPV,  OpticalAirPanel);
-  
+  new G4LogicalBorderSurface("Panel/Air", PanelPV,  WorldPV, OpticalPanel);
+  new G4LogicalBorderSurface("Air/Fiber",  WorldPV, FiberPV,  OpticalFiber);   
+
   // Print materials
   G4cout << *(G4Material::GetMaterialTable()) << G4endl; 
 
