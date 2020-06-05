@@ -120,9 +120,8 @@ void FPPrimaryGeneratorAction::GeneratePrimaries(G4Event* anEvent)
     */
     yPos = 0.0*10*cm;    
     xPos = 0.0*10*cm; 
-    zPos = 0.0*5*mm;   
-    //		zPos = 0.55*cm;    // from panel
-    //		zPos = 0.95*cm;     // inside fiber
+    zPos = 0.8*5*mm;      // inside fiber
+    //zPos = 0.5*5*mm;      // inside panel
     fParticleGun->SetParticlePosition(G4ThreeVector(xPos, yPos, zPos)); 
     
     theta = G4UniformRand()*180*deg;

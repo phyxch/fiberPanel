@@ -8,6 +8,10 @@
 ///
 //  June 1, 2020: Define scintillator and fiber materials (done!)
 //                         Add optical boundary and surfaces.
+//
+// June 5, 2020: Hexc
+//                        Added absorption length for panel and fiber
+//
 
 #include "FPDetectorConstruction.hh"
 
@@ -207,6 +211,10 @@ G4VPhysicalVolume* FPDetectorConstruction::Construct()
   G4double Ephoton[NUM] = {2.00*eV, 3.47*eV};   // TO match the photon energy range as defined in the gdml file
   G4double RefractiveIndex_Panel[NUM] = {1.58, 1.58};
   G4double RefractiveIndex_Air[NUM] = {1.0, 1.0};
+  G4double Absorption_Fiber[NUM] = {5.40*m, 5.40*m};
+  G4double Absorption_Panel[NUM] = {4.0*m, 4.0*m};
+  G4double Absorption_Air[NUM] = {10.0*m, 10.0*m};    // A guessed number
+    
   //  G4double SpecularLobe[NUM]    = {0.3, 0.3};
   //  G4double SpecularSpike[NUM]   = {0.2, 0.2};
   //  G4double Backscatter[NUM]     = {0.2, 0.2};       // need to check these values
@@ -214,18 +222,23 @@ G4VPhysicalVolume* FPDetectorConstruction::Construct()
   // Adjusted for scintillator panel
   G4double PanelReflect[NUM]      = {0.95, 0.95};     // changed from 0.95, 0.95 to 0.85, 0.98
   G4double AirReflect[NUM]      = {0.98, 0.98}; 
+
   
   G4MaterialPropertiesTable *Fiber = new G4MaterialPropertiesTable();
   Fiber->AddProperty("RINDEX", Ephoton, RefractiveIndex_Panel, NUM);
-  Fiber->AddProperty("REFLECTIVITY", Ephoton, PanelReflect, NUM);      
+  Fiber->AddProperty("REFLECTIVITY", Ephoton, PanelReflect, NUM);
+  Fiber->AddProperty("WLSABSLENGTH", Ephoton, Absorption_Fiber, NUM);
+  //Fiber->AddProperty("WLSCOMPONENT", Ephoton, EmissionWLS, NUM);      
   
   G4MaterialPropertiesTable *Panel = new G4MaterialPropertiesTable();
   Panel->AddProperty("RINDEX", Ephoton, RefractiveIndex_Panel, NUM);
   Panel->AddProperty("REFLECTIVITY", Ephoton, PanelReflect, NUM);
+  Panel->AddProperty("ABSLENGTH", Ephoton, Absorption_Panel, NUM);
   
   G4MaterialPropertiesTable *Air = new G4MaterialPropertiesTable();
   Air->AddProperty("RINDEX", Ephoton, RefractiveIndex_Air, NUM);
-  Air->AddProperty("REFLECTIVITY", Ephoton, AirReflect, NUM);     
+  Air->AddProperty("REFLECTIVITY", Ephoton, AirReflect, NUM);
+  Air->AddProperty("ABSLENGTH", Ephoton, Absorption_Air, NUM);
   
   // Optical surfaces and boundaries
   //
@@ -237,7 +250,7 @@ G4VPhysicalVolume* FPDetectorConstruction::Construct()
   OpticalPanel->SetFinish(polished);    // polishd: follows Snell's law
   OpticalPanel->SetMaterialPropertiesTable(Panel);
 
-  // For Panel
+  // For Fiber
   G4OpticalSurface *OpticalFiber = new G4OpticalSurface("FiberSurface");
   OpticalFiber->SetModel(unified);
   OpticalFiber->SetType(dielectric_dielectric);
