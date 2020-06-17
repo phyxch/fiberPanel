@@ -16,6 +16,7 @@
 #include "FPDetectorConstruction.hh"
 
 #include "G4NistManager.hh"
+#include "G4Material.hh"
 #include "G4Box.hh"
 #include "G4Tubs.hh"
 #include "G4LogicalVolume.hh"
@@ -104,7 +105,8 @@ G4VPhysicalVolume* FPDetectorConstruction::Construct()
   G4Material* default_mat = nist->FindOrBuildMaterial("G4_AIR");
   G4Material* panel_mat   = nist->FindOrBuildMaterial("EJ200");
   G4Material* fiber_mat   = nist->FindOrBuildMaterial("WLS");
-        
+  G4Material* wrapping_mat = nist->FindOrBuildMaterial("G4_Al");
+  
   //     
   // World
   //
@@ -144,8 +146,8 @@ G4VPhysicalVolume* FPDetectorConstruction::Construct()
     new G4Tubs("Groove", 0.0, 0.5*grooveD, 0.5*grooveL, 0., twopi);
 
   
-  G4RotationMatrix* yRot = new G4RotationMatrix;  // Rotates X and Z axes only
-  yRot->rotateY(90*deg);                                             // Rotates 45 degrees
+  G4RotationMatrix* yRot = new G4RotationMatrix; 
+  yRot->rotateY(90*deg);                                          // rotate 90 degree along Y-axis  
   G4ThreeVector zTrans(0, 0, 0.445*panelZ);          // 0.45 factor causes oversubtraction 
 
   G4SubtractionSolid* panelGroove =
@@ -166,7 +168,56 @@ G4VPhysicalVolume* FPDetectorConstruction::Construct()
 					     WorldLV,                   //its mother  volume
 					     false,                            //no boolean operation
 					     0,                                  //copy number
-					     fCheckOverlaps);         // checking overlaps 
+					     fCheckOverlaps);         // checking overlaps
+ 
+  //
+  // Wrapping material (Al foil)
+  //
+  G4double padding_1 = 0.001*mm;
+  G4double padding_2 = 0.002*mm;
+
+  // Smaller box for making the wrapping material
+  G4Box* solidWrappingBox_1 =    
+    new G4Box("WrappingBox1",                                                                                             //its name
+	      0.5*panelXY+padding_1, 0.5*panelXY+padding_1, 0.5*panelZ+padding_1);          //its size
+
+  // Gibber box for making the wrapping material
+  G4Box* solidWrappingBox_2 =    
+    new G4Box("WrappingBox2",                                                                                             //its name
+	      0.5*panelXY+padding_2, 0.5*panelXY+padding_2, 0.5*panelZ+padding_2);          //its size
+
+  G4SubtractionSolid* solidWrapping =
+    new G4SubtractionSolid("Wrapping", solidWrappingBox_2, solidWrappingBox_1);
+    
+  //
+  // Making photosensor holes
+  //
+  
+  G4Tubs* solidSensorHole =
+    new G4Tubs("Hole", 0.0, 0.51*fiberD, 0.5*(padding_2 - padding_1), 0., twopi);
+
+  // Rotate along y-axis (defined earlier for making the groove
+  //  yRot->rotateY(90*deg);                                          // rotate 90 degree along Y-axis  
+  G4ThreeVector holeTrans( (0.5*panelXY+padding_1+0.5*(padding_2-padding_1)), 0, 0.445*panelZ);  
+
+  G4SubtractionSolid* solidWrappingHole =
+    new G4SubtractionSolid("WrappingHole", solidWrapping, solidSensorHole, yRot, holeTrans);
+
+  G4LogicalVolume* WrappingLV =
+    new G4LogicalVolume(solidWrappingHole,
+			wrapping_mat,
+			"WrappingLV");
+
+  G4PVPlacement* WrappingPV = new G4PVPlacement(0,                 //no rotation
+					     G4ThreeVector(),         //at (0,0,0)
+					     WrappingLV,                //its logical volume
+					     "WrappingPV",             //its name
+					     WorldLV,                      //its mother  volume
+					     false,                            //no boolean operation
+					     0,                                  //copy number
+					     fCheckOverlaps);         // checking overlaps
+  
+  
   //     
   // Wavelength shifting fiber
   //
@@ -201,8 +252,9 @@ G4VPhysicalVolume* FPDetectorConstruction::Construct()
   
   // Visualization attributes
   //
-  //  logicPanel->SetVisAttributes (G4VisAttributes::GetInvisible());
-  //  logicFiber->SetVisAttributes (G4VisAttributes::GetInvisible());    
+  WorldLV->SetVisAttributes (G4VisAttributes::GetInvisible());
+  PanelLV->SetVisAttributes (G4VisAttributes::GetInvisible());
+  FiberLV->SetVisAttributes (G4VisAttributes::GetInvisible());    
 
   //
   // Define optical material properties for the air and panel
@@ -228,6 +280,7 @@ G4VPhysicalVolume* FPDetectorConstruction::Construct()
   Fiber->AddProperty("RINDEX", Ephoton, RefractiveIndex_Panel, NUM);
   Fiber->AddProperty("REFLECTIVITY", Ephoton, PanelReflect, NUM);
   Fiber->AddProperty("WLSABSLENGTH", Ephoton, Absorption_Fiber, NUM);
+  Fiber->AddProperty("ABSLENGTH", Ephoton, Absorption_Fiber, NUM);
   //Fiber->AddProperty("WLSCOMPONENT", Ephoton, EmissionWLS, NUM);      
   
   G4MaterialPropertiesTable *Panel = new G4MaterialPropertiesTable();
@@ -274,7 +327,10 @@ G4VPhysicalVolume* FPDetectorConstruction::Construct()
   // Optical border surface
   //
   new G4LogicalBorderSurface("Panel/Air", PanelPV,  WorldPV, OpticalPanel);
-  new G4LogicalBorderSurface("Air/Fiber",  WorldPV, FiberPV,  OpticalFiber);   
+  new G4LogicalBorderSurface("Air/Panel", WorldPV,  PanelPV, OpticalPanel);
+
+  new G4LogicalBorderSurface("Air/Fiber",  WorldPV, FiberPV,  OpticalFiber);
+  new G4LogicalBorderSurface("Fiber/Air",  FiberPV, WorldPV,  OpticalFiber);   
 
   // Print materials
   G4cout << *(G4Material::GetMaterialTable()) << G4endl; 
