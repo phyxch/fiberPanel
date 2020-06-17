@@ -3,6 +3,18 @@
 /// Authors: hexc. Zachary Langford and Nadia Qutob
 
 /// June 1, 2020: Add optical processes (done!)
+/// June 17, 2020: hexc, Zachary, Nadia
+///          Revisit needed optical processes: 1) Commented out kCerenkov process;
+///          2) Added kAbsorption process; 
+///
+///          kCerenkov 	Cerenkov process index.
+///          kScintillation 	Scintillation process index.
+///          kAbsorption 	Absorption process index.
+///          kRayleigh 	Rayleigh scattering process index.
+///          kMieHG 	Mie scattering process index.
+///          kBoundary 	Boundary process index.
+///          kWLS 	Wave Length Shifting process index.
+///          kNoProcess 	Number of processes, no selected process.
 
 /// \file fiberPanelMain.cc
 
@@ -131,10 +143,12 @@ int main(int argc,char** argv)
   //
   G4OpticalPhysics* opticalPhysics = new G4OpticalPhysics();
   phys->RegisterPhysics(opticalPhysics);
-  opticalPhysics->Configure(kCerenkov, true);
-  opticalPhysics->SetCerenkovStackPhotons(false);
-  opticalPhysics->Configure(kScintillation, true); 
+  //opticalPhysics->Configure(kCerenkov, true);
+  //opticalPhysics->SetCerenkovStackPhotons(false);
+  opticalPhysics->Configure(kScintillation, true);
+  opticalPhysics->Configure(kAbsorption, true); 
   opticalPhysics->Configure(kBoundary, true);      
+  opticalPhysics->Configure(kWLS, true); 
   phys->DumpList();
   
   //auto physicsList = new FTFP_BERT;
