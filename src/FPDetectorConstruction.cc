@@ -156,8 +156,8 @@ G4VPhysicalVolume* FPDetectorConstruction::Construct()
   
   G4LogicalVolume* PanelLV =                         
     new G4LogicalVolume(panelGroove,           //its solid
-                        panel_mat ,                          //its material
-                        "PanelLV");                            //its name
+                        panel_mat ,                               //its material
+                        "PanelLV");                                //its name
   //
   // Place the panel in the world volume
   //
@@ -173,8 +173,8 @@ G4VPhysicalVolume* FPDetectorConstruction::Construct()
   //
   // Wrapping material (Al foil)
   //
-  G4double padding_1 = 0.001*mm;
-  G4double padding_2 = 0.002*mm;
+  G4double padding_1 = 0.1*mm;   // changed from 0.001*mm to 0.1*mm
+  G4double padding_2 = 0.2*mm;   // changed from 0.001*mm to 0.1*mm
 
   // Smaller box for making the wrapping material
   G4Box* solidWrappingBox_1 =    
@@ -194,7 +194,7 @@ G4VPhysicalVolume* FPDetectorConstruction::Construct()
   //
   
   G4Tubs* solidSensorHole =
-    new G4Tubs("Hole", 0.0, 0.51*fiberD, 0.5*(padding_2 - padding_1), 0., twopi);
+    new G4Tubs("Hole", 0.0, 0.8*fiberD, 0.5*(padding_2 - padding_1), 0., twopi); // wider than the groove diameter.
 
   // Rotate along y-axis (defined earlier for making the groove
   //  yRot->rotateY(90*deg);                                          // rotate 90 degree along Y-axis  
@@ -253,8 +253,8 @@ G4VPhysicalVolume* FPDetectorConstruction::Construct()
   // Visualization attributes
   //
   WorldLV->SetVisAttributes (G4VisAttributes::GetInvisible());
-  PanelLV->SetVisAttributes (G4VisAttributes::GetInvisible());
-  FiberLV->SetVisAttributes (G4VisAttributes::GetInvisible());    
+  //PanelLV->SetVisAttributes (G4VisAttributes::GetInvisible());
+  //FiberLV->SetVisAttributes (G4VisAttributes::GetInvisible());    
 
   //
   // Define optical material properties for the air and panel
@@ -263,6 +263,7 @@ G4VPhysicalVolume* FPDetectorConstruction::Construct()
   G4double Ephoton[NUM] = {2.00*eV, 3.47*eV};   // TO match the photon energy range as defined in the gdml file
   G4double RefractiveIndex_Panel[NUM] = {1.58, 1.58};
   G4double RefractiveIndex_Air[NUM] = {1.0, 1.0};
+
   G4double Absorption_Fiber[NUM] = {5.40*m, 5.40*m};
   G4double Absorption_Panel[NUM] = {4.0*m, 4.0*m};
   G4double Absorption_Air[NUM] = {10.0*m, 10.0*m};    // A guessed number
@@ -275,13 +276,69 @@ G4VPhysicalVolume* FPDetectorConstruction::Construct()
   G4double PanelReflect[NUM]      = {0.95, 0.95};     // changed from 0.95, 0.95 to 0.85, 0.98
   G4double AirReflect[NUM]      = {0.98, 0.98}; 
 
+  /* Copied from WLS example  6/19/2020  */
+
+  G4double photonEnergy[] =
+  {2.00*eV,2.03*eV,2.06*eV,2.09*eV,2.12*eV,
+   2.15*eV,2.18*eV,2.21*eV,2.24*eV,2.27*eV,
+   2.30*eV,2.33*eV,2.36*eV,2.39*eV,2.42*eV,
+   2.45*eV,2.48*eV,2.51*eV,2.54*eV,2.57*eV,
+   2.60*eV,2.63*eV,2.66*eV,2.69*eV,2.72*eV,
+   2.75*eV,2.78*eV,2.81*eV,2.84*eV,2.87*eV,
+   2.90*eV,2.93*eV,2.96*eV,2.99*eV,3.02*eV,
+   3.05*eV,3.08*eV,3.11*eV,3.14*eV,3.17*eV,
+   3.20*eV,3.23*eV,3.26*eV,3.29*eV,3.32*eV,
+   3.35*eV,3.38*eV,3.41*eV,3.44*eV,3.47*eV};
+
   
+  const G4int nEntries = sizeof(photonEnergy)/sizeof(G4double);
+  
+  G4double refractiveIndexWLSfiber[] =
+  { 1.60, 1.60, 1.60, 1.60, 1.60, 1.60, 1.60, 1.60, 1.60, 1.60,
+    1.60, 1.60, 1.60, 1.60, 1.60, 1.60, 1.60, 1.60, 1.60, 1.60,
+    1.60, 1.60, 1.60, 1.60, 1.60, 1.60, 1.60, 1.60, 1.60, 1.60,
+    1.60, 1.60, 1.60, 1.60, 1.60, 1.60, 1.60, 1.60, 1.60, 1.60,
+    1.60, 1.60, 1.60, 1.60, 1.60, 1.60, 1.60, 1.60, 1.60, 1.60};
+
+  assert(sizeof(refractiveIndexWLSfiber) == sizeof(photonEnergy));
+
+  G4double absWLSfiber[] =
+  {5.40*m,5.40*m,5.40*m,5.40*m,5.40*m,5.40*m,5.40*m,5.40*m,5.40*m,5.40*m,
+   5.40*m,5.40*m,5.40*m,5.40*m,5.40*m,5.40*m,5.40*m,5.40*m,5.40*m,5.40*m,
+   5.40*m,5.40*m,5.40*m,5.40*m,5.40*m,5.40*m,5.40*m,5.40*m,5.40*m,1.10*m,
+   1.10*m,1.10*m,1.10*m,1.10*m,1.10*m,1.10*m, 1.*mm, 1.*mm, 1.*mm, 1.*mm,
+    1.*mm, 1.*mm, 1.*mm, 1.*mm, 1.*mm, 1.*mm, 1.*mm, 1.*mm, 1.*mm, 1.*mm};
+
+  assert(sizeof(absWLSfiber) == sizeof(photonEnergy));
+
+  G4double emissionFib[] =
+  {0.05, 0.10, 0.30, 0.50, 0.75, 1.00, 1.50, 1.85, 2.30, 2.75,
+   3.25, 3.80, 4.50, 5.20, 6.00, 7.00, 8.50, 9.50, 11.1, 12.4,
+   12.9, 13.0, 12.8, 12.3, 11.1, 11.0, 12.0, 11.0, 17.0, 16.9,
+   15.0, 9.00, 2.50, 1.00, 0.05, 0.00, 0.00, 0.00, 0.00, 0.00,
+   0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00};
+
+  assert(sizeof(emissionFib) == sizeof(photonEnergy));
+
+  // Add entries into properties table
+  G4MaterialPropertiesTable* mptWLSfiber = new G4MaterialPropertiesTable();
+  mptWLSfiber->
+           AddProperty("RINDEX",photonEnergy,refractiveIndexWLSfiber,nEntries);
+  // mptWLSfiber->AddProperty("ABSLENGTH",photonEnergy,absWLSfiber,nEntries);
+  mptWLSfiber->AddProperty("WLSABSLENGTH",photonEnergy,absWLSfiber,nEntries);
+  mptWLSfiber->AddProperty("WLSCOMPONENT",photonEnergy,emissionFib,nEntries);
+  mptWLSfiber->AddConstProperty("WLSTIMECONSTANT", 0.5*ns);
+
+  //  fPMMA->SetMaterialPropertiesTable(mptWLSfiber);
+
+  /*
   G4MaterialPropertiesTable *Fiber = new G4MaterialPropertiesTable();
-  Fiber->AddProperty("RINDEX", Ephoton, RefractiveIndex_Panel, NUM);
-  Fiber->AddProperty("REFLECTIVITY", Ephoton, PanelReflect, NUM);
+  Fiber->AddProperty("RINDEX", Ephoton, RefractiveIndex_Panel, NUM);    // Use the same for panel
+  Fiber->AddProperty("REFLECTIVITY", Ephoton, PanelReflect, NUM);          // Use the same for panel
   Fiber->AddProperty("WLSABSLENGTH", Ephoton, Absorption_Fiber, NUM);
   Fiber->AddProperty("ABSLENGTH", Ephoton, Absorption_Fiber, NUM);
   //Fiber->AddProperty("WLSCOMPONENT", Ephoton, EmissionWLS, NUM);      
+  */
   
   G4MaterialPropertiesTable *Panel = new G4MaterialPropertiesTable();
   Panel->AddProperty("RINDEX", Ephoton, RefractiveIndex_Panel, NUM);
@@ -300,8 +357,14 @@ G4VPhysicalVolume* FPDetectorConstruction::Construct()
   OpticalPanel->SetModel(unified);
   OpticalPanel->SetType(dielectric_dielectric);
   //OpticalPanel->SetFinish(polishedfrontpainted);    // polishdfrontpainted: only reflection, absorption and no refraction
-  OpticalPanel->SetFinish(polished);    // polishd: follows Snell's law
+  //  OpticalPanel->SetFinish(polished);    // polishd: follows Snell's law
+  OpticalPanel->SetFinish(ground);    // ground: follows Snell's law
   OpticalPanel->SetMaterialPropertiesTable(Panel);
+  /*
+  GROUND:The incidence of a photon upon a rough surface requires choosing the angle, a, between a ‘micro-facet’ normal and that of the average surface. 
+The UNIFIED model assumes that the probability of micro-facet normals populates the annulus of solid angle sin(a)dawill be  proportional to a gaussian of SigmaAlpha:theOpSurface->SetSigmaAlpha(0.1);where sigma_alpha is in [rad]
+In the GLISUR model this is indicated by the value of polish; when it is <1, then a random point is generated in a sphere of radius (1-polish), and the corresponding vector is added to the normal. The value 0 means maximum roughness with effective plane of reflection distributedas cos(a).theOpSurface -> SetPolish (0.0)
+  */
 
   // For Fiber
   G4OpticalSurface *OpticalFiber = new G4OpticalSurface("FiberSurface");
@@ -309,7 +372,8 @@ G4VPhysicalVolume* FPDetectorConstruction::Construct()
   OpticalFiber->SetType(dielectric_dielectric);
   OpticalFiber->SetFinish(polished);    // polishdfronpainted: only reflection, absorption and no refraction
   //   OpticalAirFiber->SetFinish(polished);    // polished: follows Snell's law
-  OpticalFiber->SetMaterialPropertiesTable(Fiber);
+  //  OpticalFiber->SetMaterialPropertiesTable(Fiber);
+  OpticalFiber->SetMaterialPropertiesTable(mptWLSfiber);
 
   // For Air
   G4OpticalSurface *OpticalAir = new G4OpticalSurface("AirSurface");
@@ -321,7 +385,8 @@ G4VPhysicalVolume* FPDetectorConstruction::Construct()
 
   // Set the material properties for the optics
   panel_mat->SetMaterialPropertiesTable(Panel);
-  fiber_mat->SetMaterialPropertiesTable(Fiber);
+  // fiber_mat->SetMaterialPropertiesTable(Fiber);
+  fiber_mat->SetMaterialPropertiesTable(mptWLSfiber);
   default_mat->SetMaterialPropertiesTable(Air);    // Air
   
   // Optical border surface
