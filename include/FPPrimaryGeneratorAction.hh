@@ -4,6 +4,10 @@
 ///
 /// Updated: June 3, 2020: hexc, Zachary and Nadia
 ///                 Removed meaningless comments.
+///
+///                 June 19, 2020: Hexc, Zachary and Nadia
+///                 Implementing event generator messenger: i.e. particle gun position (x, y, z)
+///
 
 #ifndef FPPrimaryGeneratorAction_h
 #define FPPrimaryGeneratorAction_h 1
@@ -14,19 +18,24 @@
 
 class G4ParticleGun;
 class G4Event;
+class G4UIcmdWith3VectorAndUnit;
+class FPPrimaryGeneratorMessenger;
 
 class FPPrimaryGeneratorAction : public G4VUserPrimaryGeneratorAction
 {
-  public:
+public:
     FPPrimaryGeneratorAction();    
-    virtual ~FPPrimaryGeneratorAction();
-
-    virtual void GeneratePrimaries(G4Event*);         
-
-    const G4ParticleGun* GetParticleGun() const { return fParticleGun; }
+  virtual ~FPPrimaryGeneratorAction();
   
-  private:
-    G4ParticleGun*  fParticleGun;
+  virtual void GeneratePrimaries(G4Event*);         
+  
+  const G4ParticleGun* GetParticleGun() const { return fParticleGun; }
+  inline void SetGunPosition(G4ThreeVector aVec){gunPosition = aVec;}
+  
+private:
+  G4ParticleGun*  fParticleGun;
+  FPPrimaryGeneratorMessenger* generatorMessenger;
+  G4ThreeVector  gunPosition;
 };
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
