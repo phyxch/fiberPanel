@@ -5,10 +5,12 @@
 /// Updated: June 3, 2020: Hexc, Zachary and Nadia
 ///                 Add optical photons following the scheme in loopPanel simulation
 ///
-///
+///                 June 19, 2020: Hexc, Zachary and Nadia
+///                 Implementing event generator messenger: i.e. particle gun position (x, y, z)
+///                   
 
 #include "FPPrimaryGeneratorAction.hh"
-
+#include "FPPrimaryGeneratorMessenger.hh"
 #include "G4RunManager.hh"
 #include "G4Event.hh"
 #include "G4LogicalVolumeStore.hh"
@@ -30,7 +32,8 @@ FPPrimaryGeneratorAction::FPPrimaryGeneratorAction()
 {
   G4int n_particle = 1;
   fParticleGun  = new G4ParticleGun(n_particle);
-
+  generatorMessenger = new FPPrimaryGeneratorMessenger(this);
+  
   // default particle kinematic
 
   //
@@ -48,7 +51,8 @@ FPPrimaryGeneratorAction::FPPrimaryGeneratorAction()
   fParticleGun->SetParticleEnergy(1*eV);    
   fParticleGun->SetParticleMomentumDirection(G4ThreeVector(1.,0.,0.));
   */
-  
+
+  gunPosition = G4ThreeVector(0.0*cm, 0.0*cm, 0.0*cm);     
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
@@ -72,33 +76,6 @@ void FPPrimaryGeneratorAction::GeneratePrimaries(G4Event* anEvent)
   // on DetectorConstruction class we get world volume 
   // from G4LogicalVolumeStore
   //
-/*
-  G4double panelXHalfLength = 0., panelYHalfLength = 0., panelZHalfLength = 0.;
-  auto panelLV = G4LogicalVolumeStore::GetInstance()->GetVolume("PanelLV");
-  
-  // Check that the panel volume has box shape
-  G4Box* panelBox = nullptr;
-  
-  if (  panelLV ) {
-  //G4cout << "We found the panel! " << G4endl;
-    panelBox = dynamic_cast<G4Box*>(panelLV->GetSolid());
-    }    
-  
-  if ( panelBox ) {
-  panelXHalfLength = panelBox->GetXHalfLength();
-    panelYHalfLength = panelBox->GetYHalfLength();
-    panelZHalfLength = panelBox->GetZHalfLength();  
-    //	G4cout << " panelZHalfLength = " << panelZHalfLength << G4endl;
-    }
-  else  {
-  G4ExceptionDescription msg;
-    msg << "Panel volume of box shape not found." << G4endl;
-    msg << "Perhaps you have changed geometry." << G4endl;
-    msg << "The gun will be place in the center.";
-    G4Exception("FPPrimaryGeneratorAction::GeneratePrimaries()",
-    "MyCode0002", JustWarning, msg);
-		} 
-*/
 
   G4double xPos, yPos, zPos, xVec, yVec, zVec;
   G4double sigmaAngle, theta, phi, momentum, sigmaMomentum, mass, pp, Ekin;
@@ -114,15 +91,15 @@ void FPPrimaryGeneratorAction::GeneratePrimaries(G4Event* anEvent)
     //Ekin = ( 2.58+(3.1-2.58)*G4UniformRand() )*eV;   // 2.58-3.1eV ~= 400-480 nm
     Ekin = ( 2.034+(4.136-2.034)*G4UniformRand() )*eV;   // 2.58-3.1eV ~= 200-700 nm
     fParticleGun->SetParticleEnergy(Ekin);
+
     /*
-      yPos = (G4UniformRand()-0.5)*200.0*cm;
-      xPos = (G4UniformRand()-0.5)*200.0*cm;
-    */
     yPos = 0.0*10*cm;    
     xPos = 0.0*10*cm; 
-    zPos = 0.8*5*mm;      // inside fiber
-    //zPos = 0.5*5*mm;      // inside panel
+    zPos = 0.8*5*mm;   
     fParticleGun->SetParticlePosition(G4ThreeVector(xPos, yPos, zPos)); 
+    */
+    
+    fParticleGun->SetParticlePosition(gunPosition); 
     
     theta = G4UniformRand()*180*deg;
     //theta = 90.0*deg;
