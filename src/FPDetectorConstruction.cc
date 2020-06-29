@@ -52,7 +52,7 @@ FPDetectorConstruction::FPDetectorConstruction()
   fiberD = 1.0*mm;
   fiberL = panelXY;
   grooveL = fiberL;
-  grooveD = 1.1*fiberD;
+  grooveD = 1.01*fiberD;
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
@@ -195,16 +195,48 @@ G4VPhysicalVolume* FPDetectorConstruction::Construct()
   //
   // Making photosensor holes
   //
-  
-  G4Tubs* solidSensorHole =
-    new G4Tubs("Hole", 0.0, 0.8*fiberD, 0.5*(padding_2 - padding_1), 0., twopi); // wider than the groove diameter.
 
+  // Replace the circular opening with a square hole
+  //  G4Tubs* solidSensorHole =
+  //  new G4Tubs("Hole", 0.0, 0.8*fiberD, 0.5*(padding_2 - padding_1), 0., twopi); // wider than the groove diameter.
+  G4double SiPM_x = padding_2 - padding_1;
+  G4double SiPM_y = 1.09*mm;
+  G4double SiPM_z = 1.09*mm;
+
+  G4Box* solidSensor = new G4Box("Hole", SiPM_x/2, SiPM_y/2, SiPM_z/2);
+  G4LogicalVolume* SensorLV =
+    new G4LogicalVolume(solidSensor,
+			default_mat,
+			"SensorLV");
+
+  G4PVPlacement* SensorPV = new G4PVPlacement(0,                 //no rotation
+					     G4ThreeVector( (0.5*panelXY+padding_1+0.5*(padding_2-padding_1)), 0, 0.445*panelZ ),         //at (0,0,0)
+					     SensorLV,                //its logical volume
+					     "SensorPV",             //its name
+					     WorldLV,                      //its mother  volume
+					     false,                            //no boolean operation
+					     0,                                  //copy number
+					     fCheckOverlaps);         // checking overlaps
+
+  // Sensor visualization attribute
+  G4VisAttributes photonDetectorVisAtt(G4Colour::Red());
+  photonDetectorVisAtt.SetForceWireframe(true);
+  photonDetectorVisAtt.SetLineWidth(3.);
+  SensorLV->SetVisAttributes(photonDetectorVisAtt);
+
+  // Create a opening hole in the wrapping for installing sensor 
+  G4double Hole_x = padding_2 - padding_1;
+  G4double Hole_y = 1.1*mm;
+  G4double Hole_z = 1.1*mm;
+  
+  G4Box* solidSensorHole = new G4Box("Hole", Hole_x/2, Hole_y/2, Hole_z/2);
+  
   // Rotate along y-axis (defined earlier for making the groove
   //  yRot->rotateY(90*deg);                                          // rotate 90 degree along Y-axis  
   G4ThreeVector holeTrans( (0.5*panelXY+padding_1+0.5*(padding_2-padding_1)), 0, 0.445*panelZ);  
 
   G4SubtractionSolid* solidWrappingHole =
-    new G4SubtractionSolid("WrappingHole", solidWrapping, solidSensorHole, yRot, holeTrans);
+    new G4SubtractionSolid("WrappingHole", solidWrapping, solidSensorHole, 0, holeTrans);
 
   G4LogicalVolume* WrappingLV =
     new G4LogicalVolume(solidWrappingHole,
@@ -347,8 +379,9 @@ G4VPhysicalVolume* FPDetectorConstruction::Construct()
   
   G4MaterialPropertiesTable *Air = new G4MaterialPropertiesTable();
   Air->AddProperty("RINDEX", photonEnergy, RefractiveIndex_Air, nEntries);
-  Air->AddProperty("REFLECTIVITY", photonEnergy, AirReflect, nEntries);
-  Air->AddProperty("ABSLENGTH", photonEnergy, Absorption_Air, nEntries);
+  // Note 100% sure if one needs to define the following two properties or not.
+  //  Air->AddProperty("REFLECTIVITY", photonEnergy, AirReflect, nEntries);
+  //  Air->AddProperty("ABSLENGTH", photonEnergy, Absorption_Air, nEntries);
   
   //
   // Define optical material properties for the fiber
