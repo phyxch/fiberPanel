@@ -13,7 +13,15 @@
 //                        Added absorption length for panel and fiber
 //
 // June 19, 2020: Hexc, Nadia and Zachary
-//                        Added the optical property parameters for fiber following the GEANT4 example WLS. 
+//                        Added the optical property parameters for fiber following the GEANT4 example WLS.
+//
+// July 1, 2020: Hexc, Nadia and Zachary
+//                        Implemented SiPM photosensor detector volume (sensitive volume). We also had an alumunum wrapping with a
+//                        square hole where the SiPM is installed.
+//
+// July 10, 2020: Hexc, Nadia and Zachary
+//                        Update the detector components construction in the following hierarchy
+//                        World <-  Aluminum wrapping <- Panel <- glue <- cladding <- fiber core
 
 #include "FPDetectorConstruction.hh"
 
@@ -30,6 +38,7 @@
 #include "G4LogicalBorderSurface.hh"     // added June 1, 2020
 #include "G4LogicalSkinSurface.hh"         // added June 22, 2020
 #include "G4SDManager.hh"
+#include "G4VSensitiveDetector.hh"        // added July 1, 2020
 #include "G4MultiFunctionalDetector.hh"
 #include "G4VPrimitiveScorer.hh"
 #include "G4PSEnergyDeposit.hh"
@@ -49,10 +58,19 @@ FPDetectorConstruction::FPDetectorConstruction()
   // Define the dimensions of all components 
   panelXY = 20.0*cm;
   panelZ = 1.0*cm;
-  fiberD = 1.0*mm;
-  fiberL = panelXY;
-  grooveL = fiberL;
-  grooveD = 1.01*fiberD;
+
+  // For Kuaray Y-11 fiber
+  claddingD = 1.0*mm;
+  claddingL = panelXY;
+  //grooveL = fiberL;
+  //grooveD = 1.01*fiberD;
+
+  fiberL = claddingL;
+  fiberD = claddingD-0.06*mm;
+
+  epoxyL = fiberL;
+  epoxyD = 1.1*claddingD;
+ 
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
@@ -70,8 +88,8 @@ void FPDetectorConstruction::DefineMaterials()
   G4double fractionmass;
 
   G4Element*  O = man->FindOrBuildElement("O" , isotopes); 
-  G4Element* Si = man->FindOrBuildElement("Si", isotopes);
-  G4Element* Lu = man->FindOrBuildElement("Lu", isotopes);
+  G4Element* Cl = man->FindOrBuildElement("Cl", isotopes);
+  G4Element* N = man->FindOrBuildElement("N", isotopes);
   G4Element* H = man->FindOrBuildElement("H",isotopes);
   G4Element*  C = man->FindOrBuildElement("C" , isotopes);   
 
@@ -79,9 +97,25 @@ void FPDetectorConstruction::DefineMaterials()
   EJ200_panel->AddElement(H, fractionmass=52.43*perCent);
   EJ200_panel->AddElement(C, fractionmass=47.57*perCent);
 
+  // Optical Cement: EJ-500
+  G4Material* EJ500_epoxy  = new G4Material("EJ500", 1.13*g/cm3, 5);  // from similar material
+  EJ500_epoxy->AddElement(H, 49);
+  EJ500_epoxy->AddElement(C, 31);
+  EJ500_epoxy->AddElement(O, 6);
+  EJ500_epoxy->AddElement(N, 2);
+  EJ500_epoxy->AddElement(Cl, 1);
+  
   G4Material* WLS_Y11_fiber = new G4Material("WLS", 1.05*g/cm3, 2);
   WLS_Y11_fiber->AddElement(H, 8);
   WLS_Y11_fiber->AddElement(C, 8);
+
+  // Fiber cladding: PMMA
+  G4Material* WLS_Y11_cladding = new G4Material("Cladding", 1.19*g/cm3, 3);
+  WLS_Y11_cladding->AddElement(C, fractionmass=33.65*perCent );
+  WLS_Y11_cladding->AddElement(H, fractionmass=53.27*perCent );
+  WLS_Y11_cladding->AddElement(O, fractionmass=13.08*perCent );
+
+  
   
 }
 
@@ -105,10 +139,12 @@ G4VPhysicalVolume* FPDetectorConstruction::Construct()
   G4double detector_dZ = nb_rings*cryst_dX;
   //
   G4NistManager* nist = G4NistManager::Instance();
-  G4Material* default_mat = nist->FindOrBuildMaterial("G4_AIR");
-  G4Material* panel_mat   = nist->FindOrBuildMaterial("EJ200");
-  G4Material* fiber_mat   = nist->FindOrBuildMaterial("WLS");
-  G4Material* wrapping_mat = nist->FindOrBuildMaterial("G4_Al");
+  default_mat = nist->FindOrBuildMaterial("G4_AIR");
+  panel_mat   = nist->FindOrBuildMaterial("EJ200");
+  fiber_mat   = nist->FindOrBuildMaterial("WLS");
+  cladding_mat   = nist->FindOrBuildMaterial("Cladding");
+  epoxy_mat   = nist->FindOrBuildMaterial("EJ500");
+  wrapping_mat = nist->FindOrBuildMaterial("G4_Al");
   
   //     
   // World
@@ -128,8 +164,8 @@ G4VPhysicalVolume* FPDetectorConstruction::Construct()
   G4VPhysicalVolume* WorldPV = 
     new G4PVPlacement(0,                     //no rotation
                       G4ThreeVector(),             //at (0,0,0)
-                      WorldLV,                      //its logical volume
-                      "WorldPV",                           //its name
+                      WorldLV,                          //its logical volume
+                      "WorldPV",                       //its name
                       0,                                      //its mother  volume
                       false,                                //no boolean operation
                       0,                                      //copy number
@@ -139,28 +175,13 @@ G4VPhysicalVolume* FPDetectorConstruction::Construct()
   // Scintillator Panel
   //
   G4Box* solidPanel =    
-    new G4Box("Panel",                                             //its name
-	      0.5*panelXY, 0.5*panelXY, 0.5*panelZ);   //its size
-  
-  //     
-  // Panel groove
-  //
-  G4Tubs* solidGroove =
-    new G4Tubs("Groove", 0.0, 0.5*grooveD, 0.5*grooveL, 0., twopi);
-
-  
-  G4RotationMatrix* yRot = new G4RotationMatrix; 
-  yRot->rotateY(90*deg);                                          // rotate 90 degree along Y-axis  
-  G4ThreeVector zTrans(0, 0, 0.445*panelZ);          // 0.45 factor causes oversubtraction 
-
-  G4SubtractionSolid* panelGroove =
-    new G4SubtractionSolid("Panel-Groove", solidPanel, solidGroove, yRot, zTrans);
-  
+    new G4Box("Panel",
+	      0.5*panelXY, 0.5*panelXY, 0.5*panelZ);
   
   G4LogicalVolume* PanelLV =                         
-    new G4LogicalVolume(panelGroove,           //its solid
-                        panel_mat ,                               //its material
-                        "PanelLV");                                //its name
+    new G4LogicalVolume(solidPanel, 
+                        panel_mat ,
+                        "PanelLV");
   //
   // Place the panel in the world volume
   //
@@ -199,6 +220,7 @@ G4VPhysicalVolume* FPDetectorConstruction::Construct()
   // Replace the circular opening with a square hole
   //  G4Tubs* solidSensorHole =
   //  new G4Tubs("Hole", 0.0, 0.8*fiberD, 0.5*(padding_2 - padding_1), 0., twopi); // wider than the groove diameter.
+  // 
   G4double SiPM_x = padding_2 - padding_1;
   G4double SiPM_y = 1.09*mm;
   G4double SiPM_z = 1.09*mm;
@@ -222,7 +244,7 @@ G4VPhysicalVolume* FPDetectorConstruction::Construct()
   G4VisAttributes photonDetectorVisAtt(G4Colour::Red());
   photonDetectorVisAtt.SetForceWireframe(true);
   photonDetectorVisAtt.SetLineWidth(3.);
-  SensorLV->SetVisAttributes(photonDetectorVisAtt);
+  SensorLV->SetVisAttributes(photonDetectorVisAtt);  
 
   // Create a opening hole in the wrapping for installing sensor 
   G4double Hole_x = padding_2 - padding_1;
@@ -252,34 +274,70 @@ G4VPhysicalVolume* FPDetectorConstruction::Construct()
 					     0,                                  //copy number
 					     fCheckOverlaps);         // checking overlaps
   //     
+  // Optical epoxy
+  //
+  G4Tubs* solidEpoxy =
+    new G4Tubs("Epoxy", 0.0, 0.5*epoxyD, 0.5*epoxyL, 0., twopi);
+  
+  G4LogicalVolume* EpoxyLV =                         
+    new G4LogicalVolume(solidEpoxy,       //its solid
+                        epoxy_mat,                          //its material
+                        "EpoxyLV");                        //its name
+  
+  G4RotationMatrix* yRot = new G4RotationMatrix; 
+  yRot->rotateY(90*deg);                                          // rotate 90 degree along Y-axis  
+
+  // Put epoxy inside the Panel
+  G4PVPlacement* EpoxyPV = new G4PVPlacement(yRot,                                        // no rotation
+					     G4ThreeVector(0.0, 0.0, 0.5*(panelZ - epoxyD)),         // Near the surface of the panel
+					     EpoxyLV,                                                                         //its logical volume
+					     "EpoxyPV",                                                                      //its name
+					     PanelLV,                           // its mother  volume
+					     false,                                // no boolean operation
+					     0,                                      // copy number
+					    fCheckOverlaps);             // checking overlaps 
+  //     
+  // Y-11 cladding
+  //
+  G4Tubs* solidCladding =
+    new G4Tubs("Cladding", 0.0, 0.5*claddingD, 0.5*claddingL, 0., twopi);
+  
+  G4LogicalVolume* CladdingLV =                         
+    new G4LogicalVolume(solidCladding,       //its solid
+                        cladding_mat,                          //its material
+                        "CladdingLV");                        //its name
+  
+  // Put cladding inside the Epoxy
+  G4PVPlacement* CladdingPV = new G4PVPlacement(0,                                       
+					     G4ThreeVector(0.0, 0.0, 0.0),        
+					     CladdingLV,                                     
+					     "CladdingPV",    
+					     EpoxyLV, 
+					     false,   
+					     0,
+					     fCheckOverlaps);
+  //     
   // Wavelength shifting fiber
   //
-
   G4Tubs* solidFiber =
     new G4Tubs("Fiber", 0.0, 0.5*fiberD, 0.5*fiberL, 0., twopi);
-      
+  
   G4LogicalVolume* FiberLV =                         
-    new G4LogicalVolume(solidFiber,       //its solid
-                        fiber_mat,                     //its material
-                        "FiberLV");                        //its name
-                                 
+    new G4LogicalVolume(solidFiber,
+                        fiber_mat,
+                        "FiberLV");                                                               
   // 
-  // Place the fiber at the center of the groove
+  // Place the fiber at the center of the cladding
   //
-  //G4double phi = icrys*dPhi;
-  G4RotationMatrix *rotm  = new G4RotationMatrix();
-  rotm->rotateY(90*deg); 
-  //rotm.rotateZ(phi);
-  //G4Transform3D transform = G4Transform3D(rotm,position);
-
-  G4PVPlacement* FiberPV = new G4PVPlacement(rotm,                       //no rotation
-					     G4ThreeVector(0.0, 0.0, 0.445*panelZ),               //at (0,0,0)
-					     FiberLV,                         //its logical volume
-					     "FiberPV",                         //its name
-					     WorldLV,                       //its mother  volume
-					     false,                                //no boolean operation
-					     0,                                      //copy number
-					     fCheckOverlaps);             // checking overlaps 
+  
+  G4PVPlacement* FiberPV = new G4PVPlacement(0,
+					     G4ThreeVector(0.0, 0.0, 0.0),
+					     FiberLV, 
+					     "FiberPV", 
+					     CladdingLV,
+					     false, 
+					     0,
+					     fCheckOverlaps);
   
   // Visualization attributes
   //
@@ -343,6 +401,8 @@ G4VPhysicalVolume* FPDetectorConstruction::Construct()
   Panel->AddProperty("RINDEX", photonEnergy, RefractiveIndex_Panel, nEntries);
   Panel->AddProperty("REFLECTIVITY", photonEnergy, PanelReflect, nEntries);
   Panel->AddProperty("ABSLENGTH", photonEnergy, Absorption_Panel, nEntries);
+  // set in the panel material property
+  panel_mat->SetMaterialPropertiesTable(Panel);
 
   //
   // Define optical material properties for air
@@ -382,7 +442,43 @@ G4VPhysicalVolume* FPDetectorConstruction::Construct()
   // Note 100% sure if one needs to define the following two properties or not.
   //  Air->AddProperty("REFLECTIVITY", photonEnergy, AirReflect, nEntries);
   //  Air->AddProperty("ABSLENGTH", photonEnergy, Absorption_Air, nEntries);
+
+  default_mat->SetMaterialPropertiesTable(Air);  
   
+  // For Expoxy (EJ-500)
+  G4double refractiveIndexEpoxy[] =
+  { 1.57, 1.57, 1.57, 1.57, 1.57, 1.57, 1.57, 1.57, 1.57, 1.57,
+    1.57, 1.57, 1.57, 1.57, 1.57, 1.57, 1.57, 1.57, 1.57, 1.57,
+    1.57, 1.57, 1.57, 1.57, 1.57, 1.57, 1.57, 1.57, 1.57, 1.57,
+    1.57, 1.57, 1.57, 1.57, 1.57, 1.57, 1.57, 1.57, 1.57, 1.57,
+    1.57, 1.57, 1.57, 1.57, 1.57, 1.57, 1.57, 1.57, 1.57, 1.57};
+
+  assert(sizeof(refractiveIndexEpoxy) == sizeof(photonEnergy));
+
+  G4MaterialPropertiesTable *Epoxy = new G4MaterialPropertiesTable();
+  Epoxy->AddProperty("RINDEX", photonEnergy, refractiveIndexEpoxy, nEntries);
+  Epoxy->AddProperty("REFLECTIVITY", photonEnergy, PanelReflect, nEntries);    // same as for panel. May not need!
+  Epoxy->AddProperty("ABSLENGTH", photonEnergy, Absorption_Panel, nEntries);     // same as for panel  for now !
+
+  epoxy_mat->SetMaterialPropertiesTable(Epoxy);
+  
+  // For Y11-Cladding
+  G4double refractiveIndexCladding[] =
+  { 1.49, 1.49, 1.49, 1.49, 1.49, 1.49, 1.49, 1.49, 1.49, 1.49,
+    1.49, 1.49, 1.49, 1.49, 1.49, 1.49, 1.49, 1.49, 1.49, 1.49,
+    1.49, 1.49, 1.49, 1.49, 1.49, 1.49, 1.49, 1.49, 1.49, 1.49,
+    1.49, 1.49, 1.49, 1.49, 1.49, 1.49, 1.49, 1.49, 1.49, 1.49,
+    1.49, 1.49, 1.49, 1.49, 1.49, 1.49, 1.49, 1.49, 1.49, 1.49};
+
+  assert(sizeof(refractiveIndexCladding) == sizeof(photonEnergy));
+
+  G4MaterialPropertiesTable *Cladding = new G4MaterialPropertiesTable();
+  Cladding->AddProperty("RINDEX", photonEnergy, refractiveIndexCladding, nEntries);
+  Cladding->AddProperty("REFLECTIVITY", photonEnergy, PanelReflect, nEntries);          // same as for panel. May not need!
+  Cladding->AddProperty("ABSLENGTH", photonEnergy, Absorption_Panel, nEntries);     // same as panel  for now !
+
+  cladding_mat->SetMaterialPropertiesTable(Cladding);
+
   //
   // Define optical material properties for the fiber
   /* Copied from WLS example  6/19/2020  */
@@ -422,6 +518,12 @@ G4VPhysicalVolume* FPDetectorConstruction::Construct()
   mptWLSfiber->AddConstProperty("WLSTIMECONSTANT", 0.5*ns);
 
   //
+  // Set the material properties for the optics
+  //
+  fiber_mat->SetMaterialPropertiesTable(mptWLSfiber);
+
+  
+  //
   // Optical surfaces and boundaries
   //
   // For Panel
@@ -429,9 +531,21 @@ G4VPhysicalVolume* FPDetectorConstruction::Construct()
   OpticalPanel->SetModel(unified);
   OpticalPanel->SetType(dielectric_dielectric);
   //OpticalPanel->SetFinish(polishedfrontpainted);    // polishdfrontpainted: only reflection, absorption and no refraction
-  //  OpticalPanel->SetFinish(polished);    // polishd: follows Snell's law
+  //OpticalPanel->SetFinish(polished);    // polishd: follows Snell's law
   OpticalPanel->SetFinish(ground);    // ground: follows Snell's law
-
+  
+  // For Epoxy
+  G4OpticalSurface *OpticalEpoxy = new G4OpticalSurface("EpoxySurface");
+  OpticalEpoxy->SetModel(unified);
+  OpticalEpoxy->SetType(dielectric_dielectric);
+  OpticalEpoxy->SetFinish(ground);    // ground: follows Snell's law
+  
+  // For Cladding
+  G4OpticalSurface *OpticalCladding = new G4OpticalSurface("CladdingSurface");
+  OpticalCladding->SetModel(unified);
+  OpticalCladding->SetType(dielectric_dielectric);
+  OpticalCladding->SetFinish(ground);    // ground: follows Snell's law
+  
   /*
   GROUND:The incidence of a photon upon a rough surface requires choosing the angle, a, 
   between a ‘micro-facet’ normal and that of the average surface. 
@@ -450,7 +564,8 @@ G4VPhysicalVolume* FPDetectorConstruction::Construct()
   OpticalFiber->SetType(dielectric_dielectric);
   OpticalFiber->SetFinish(polished);    // polishdfronpainted: only reflection, absorption and no refraction
                                                                // polished: follows Snell's law
-
+  //  OpticalFiber -> SetMaterialPropertiesTable(mptWLSfiber);
+  
   // For Air
   G4OpticalSurface *OpticalAir = new G4OpticalSurface("AirSurface");
   OpticalAir->SetModel(unified);
@@ -458,17 +573,19 @@ G4VPhysicalVolume* FPDetectorConstruction::Construct()
   OpticalAir->SetFinish(polished);    // polishdfronpainted: only reflection, absorption and no refraction
 
   //
-  // Set the material properties for the optics
-  //
-  panel_mat->SetMaterialPropertiesTable(Panel);
-  fiber_mat->SetMaterialPropertiesTable(mptWLSfiber);
-  default_mat->SetMaterialPropertiesTable(Air);  
-  
-  //
   // Optical border surface
   //
   new G4LogicalBorderSurface("Panel/Air", PanelPV,  WorldPV, OpticalPanel);
   new G4LogicalBorderSurface("Air/Panel", WorldPV,  PanelPV, OpticalPanel);
+
+  new G4LogicalBorderSurface("Panel/Epoxy", PanelPV,  EpoxyPV, OpticalPanel);
+  new G4LogicalBorderSurface("Epoxy/Panel", EpoxyPV,  PanelPV, OpticalPanel);
+
+  new G4LogicalBorderSurface("Cladding/Epoxy", CladdingPV,  EpoxyPV, OpticalPanel);
+  new G4LogicalBorderSurface("Epoxy/Cladding", EpoxyPV,  CladdingPV, OpticalPanel);
+
+  new G4LogicalBorderSurface("Cladding/Fiber", CladdingPV,  FiberPV, OpticalPanel);
+  new G4LogicalBorderSurface("Fiber/Cladding", FiberPV,  CladdingPV, OpticalPanel);
 
   new G4LogicalBorderSurface("Air/Fiber",  WorldPV, FiberPV,  OpticalFiber);
   new G4LogicalBorderSurface("Fiber/Air",  FiberPV, WorldPV,  OpticalFiber);   
