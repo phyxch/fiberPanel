@@ -9,12 +9,12 @@
 #include "G4Step.hh"
 #include "G4HCofThisEvent.hh"
 #include "G4HCtable.hh"
-#inlcude "G4SDManager.hh"
+#include "G4SDManager.hh"
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
 FPSiPMSD::FPSiPMSD(G4String SDname)
-  : G4VSensitiveDetector(SDname),  photonHitCollection(0),
+  : G4VSensitiveDetector(SDname),  photonHitCollection(0)
 {  
   G4cout << "Creating SD with name: " << SDname << G4endl;
 
@@ -53,7 +53,7 @@ void FPSiPMSD::Initialize(G4HCofThisEvent* HCE)
   // -- method (which calls what is needed in the kernel to get this index).
   static G4int HCID = -1;
   if (HCID<0) HCID = GetCollectionID(0); // <<-- this is to get an ID for collectionName[0]
-  HCE->AddHitsCollection(HCID, hitCollection);
+  HCE->AddHitsCollection(HCID, photonHitCollection);
 }
 
 void FPSiPMSD::EndOfEvent(G4HCofThisEvent* HE)

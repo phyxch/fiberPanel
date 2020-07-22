@@ -43,6 +43,8 @@ private:
   
   G4Material *panel_mat, *fiber_mat, *cladding_mat, *epoxy_mat;
   G4Material *default_mat, *wrapping_mat;
+
+  G4LogicalVolume* sipmLV;
   
   G4bool  fCheckOverlaps;
 };

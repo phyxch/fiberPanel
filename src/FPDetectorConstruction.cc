@@ -46,6 +46,7 @@
 #include "G4VisAttributes.hh"
 #include "G4PhysicalConstants.hh"
 #include "G4SystemOfUnits.hh"
+#include "FPSiPMSD.hh"                           // added July 22, 2020
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
@@ -226,25 +227,24 @@ G4VPhysicalVolume* FPDetectorConstruction::Construct()
   G4double SiPM_z = 1.09*mm;
 
   G4Box* solidSensor = new G4Box("Hole", SiPM_x/2, SiPM_y/2, SiPM_z/2);
-  G4LogicalVolume* SensorLV =
-    new G4LogicalVolume(solidSensor,
-			default_mat,
-			"SensorLV");
-
-  G4PVPlacement* SensorPV = new G4PVPlacement(0,                 //no rotation
+  sipmLV = new G4LogicalVolume(solidSensor,
+			       default_mat,
+			       "sipmLV");
+  
+  G4PVPlacement* sipmPV = new G4PVPlacement(0,                 //no rotation
 					     G4ThreeVector( (0.5*panelXY+padding_1+0.5*(padding_2-padding_1)), 0, 0.445*panelZ ),         //at (0,0,0)
-					     SensorLV,                //its logical volume
-					     "SensorPV",             //its name
+					     sipmLV,                //its logical volume
+					     "sipmPV",             //its name
 					     WorldLV,                      //its mother  volume
 					     false,                            //no boolean operation
 					     0,                                  //copy number
 					     fCheckOverlaps);         // checking overlaps
 
-  // Sensor visualization attribute
+  // SiPM sensor visualization attribute
   G4VisAttributes photonDetectorVisAtt(G4Colour::Red());
   photonDetectorVisAtt.SetForceWireframe(true);
   photonDetectorVisAtt.SetLineWidth(3.);
-  SensorLV->SetVisAttributes(photonDetectorVisAtt);  
+  sipmLV->SetVisAttributes(photonDetectorVisAtt);  
 
   // Create a opening hole in the wrapping for installing sensor 
   G4double Hole_x = padding_2 - padding_1;
@@ -572,6 +572,7 @@ G4VPhysicalVolume* FPDetectorConstruction::Construct()
   OpticalAir->SetType(dielectric_dielectric);
   OpticalAir->SetFinish(polished);    // polishdfronpainted: only reflection, absorption and no refraction
 
+  /*
   //
   // Optical border surface
   //
@@ -590,6 +591,8 @@ G4VPhysicalVolume* FPDetectorConstruction::Construct()
   new G4LogicalBorderSurface("Air/Fiber",  WorldPV, FiberPV,  OpticalFiber);
   new G4LogicalBorderSurface("Fiber/Air",  FiberPV, WorldPV,  OpticalFiber);   
 
+  */
+  
   //
   // Define a simple mirror-like property for the wrapping material
   //
@@ -633,24 +636,14 @@ G4VPhysicalVolume* FPDetectorConstruction::Construct()
 void FPDetectorConstruction::ConstructSDandField()
 {
   G4SDManager::GetSDMpointer()->SetVerboseLevel(1);
+
+  // sensitive detectors -----------------------------------------------------
+  auto sdManager = G4SDManager::GetSDMpointer();
+  G4String SDname;
   
-  /*  
-  // declare crystal as a MultiFunctionalDetector scorer
-  //  
-  G4MultiFunctionalDetector* cryst = new G4MultiFunctionalDetector("crystal");
-  G4SDManager::GetSDMpointer()->AddNewDetector(cryst);
-  G4VPrimitiveScorer* primitiv1 = new G4PSEnergyDeposit("edep");
-  cryst->RegisterPrimitive(primitiv1);
-  SetSensitiveDetector("CrystalLV",cryst);
-  
-  // declare patient as a MultiFunctionalDetector scorer
-  //  
-  G4MultiFunctionalDetector* patient = new G4MultiFunctionalDetector("patient");
-  G4SDManager::GetSDMpointer()->AddNewDetector(patient);
-  G4VPrimitiveScorer* primitiv2 = new G4PSDoseDeposit("dose");
-  patient->RegisterPrimitive(primitiv2);
-  SetSensitiveDetector("PatientLV",patient);
-  */
+  auto sipmSD = new FPSiPMSD(SDname="/sipmSD");
+  sdManager->AddNewDetector(sipmSD);
+  sipmLV->SetSensitiveDetector(sipmSD);
   
 }
 

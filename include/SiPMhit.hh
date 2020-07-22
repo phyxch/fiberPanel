@@ -15,6 +15,7 @@
 
 #include "G4VHit.hh"
 #include "G4THitsCollection.hh"
+#include "G4ThreeVector.hh"
 
 class SiPMHit : public G4VHit
 {
