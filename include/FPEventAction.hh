@@ -5,6 +5,10 @@
 /// Updated: June 3, 2020: hexc, Zachary and Nadia
 ///                 Clean up the code and add event output info.
 ///
+/// Updated: July 24, 2020: hexc, Zachary and Nadia
+///                 Clean up the code and pass photon count to RunAction.
+///
+
 #ifndef FPEventAction_h
 #define FPEventAction_h 1
 
@@ -12,12 +16,6 @@
 #include "globals.hh"
 
 class FPRunAction;
-
-/// Event action class
-///
-/// In EndOfEventAction() there is collected information event per event 
-/// from Hits Collections, and accumulated statistic for 
-/// FPRunAction::EndOfRunAction().
 
 class FPEventAction : public G4UserEventAction
 {

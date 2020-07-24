@@ -4,6 +4,10 @@
 /// Updated: June 3, 2020: hexc, Zachary and Nadia
 ///                 Clean up the code and add event output info.
 ///
+///
+/// Updated: July 24, 2020 hexc, Nadia and Zachary
+///         Add photon count to the RunAction
+///
 
 #include "FPEventAction.hh"
 #include "FPRunAction.hh"
@@ -42,45 +46,25 @@ void FPEventAction::EndOfEventAction(const G4Event* evt )
   //  
   G4HCofThisEvent* HCE = evt->GetHCofThisEvent();
   if(!HCE) return;
-  
-  /*
+
   // Get hits collections IDs
-  if (fCollID_cryst < 0) {
   G4SDManager* SDMan = G4SDManager::GetSDMpointer();  
-  fCollID_cryst   = SDMan->GetCollectionID("crystal/edep");
-  fCollID_patient = SDMan->GetCollectionID("patient/dose");    
-  }
+  G4int HCID   = SDMan->GetCollectionID("SiPMHitCollection");
+
+  G4THitsMap<G4int>* evtMap = 
+  (G4THitsMap<G4int>*)(HCE->GetHC(HCID));
   
-  //Energy in crystals : identify 'good events'
-  //
-  const G4double eThreshold = 500*keV;
-  G4int nbOfFired = 0;
+  std::map<G4int,G4int*>::iterator itr;
   
-  G4THitsMap<G4double>* evtMap = 
-  (G4THitsMap<G4double>*)(HCE->GetHC(fCollID_cryst));
-  
-  std::map<G4int,G4double*>::iterator itr;
   for (itr = evtMap->GetMap()->begin(); itr != evtMap->GetMap()->end(); itr++) {
-  ///G4int copyNb  = (itr->first);
-  G4double edep = *(itr->second);
-  if (edep > eThreshold) nbOfFired++;
-  ///G4cout << "\n  cryst" << copyNb << ": " << edep/keV << " keV ";
+    //  G4int photonCount  = (itr->first);
+    G4int photonCount  = *(itr->photonCounts);
   }  
-  if (nbOfFired == 2) fRunAction->CountEvent();
-  
-  //Dose deposit in patient
-  //
-  G4double dose = 0.;
-  
-  evtMap = (G4THitsMap<G4double>*)(HCE->GetHC(fCollID_patient));
-  
-  for (itr = evtMap->GetMap()->begin(); itr != evtMap->GetMap()->end(); itr++) {
-  ///G4int copyNb  = (itr->first);
-  dose = *(itr->second);
-  }
-  if (dose > 0.) fRunAction->SumDose(dose);
-  */
-  
+
+  // Ask Run action to update photon counts
+  if (photonCount > 0)
+  fRunAction->CountPhoton();
+
 }  
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......

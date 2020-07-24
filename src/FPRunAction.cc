@@ -1,6 +1,10 @@
 /// This code was created based on B3a example
 /// Date created: May 27, 2020
 /// Authors: hexc. Zachary Langford and Nadia Qutob
+///
+/// Updated: July 24, 2020 hexc, Nadia and Zachary
+///         Cleaned up the code and added total photon counts at the end of Run
+//
 
 #include "FPRunAction.hh"
 #include "FPPrimaryGeneratorAction.hh"
@@ -15,25 +19,11 @@
 
 FPRunAction::FPRunAction()
  : G4UserRunAction(),
-   fGoodEvents(0),
-   fSumDose(0.)  
+   fPhotons(0)
 {  
-  //add new units for dose
-  // 
-  const G4double milligray = 1.e-3*gray;
-  const G4double microgray = 1.e-6*gray;
-  const G4double nanogray  = 1.e-9*gray;  
-  const G4double picogray  = 1.e-12*gray;
-   
-  new G4UnitDefinition("milligray", "milliGy" , "Dose", milligray);
-  new G4UnitDefinition("microgray", "microGy" , "Dose", microgray);
-  new G4UnitDefinition("nanogray" , "nanoGy"  , "Dose", nanogray);
-  new G4UnitDefinition("picogray" , "picoGy"  , "Dose", picogray);
-
   // Register accumulable to the accumulable manager
   G4AccumulableManager* accumulableManager = G4AccumulableManager::Instance();
-  accumulableManager->RegisterAccumulable(fGoodEvents);
-  accumulableManager->RegisterAccumulable(fSumDose); 
+  accumulableManager->RegisterAccumulable(fPhotons);
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
@@ -97,11 +87,10 @@ void FPRunAction::EndOfRunAction(const G4Run* run)
      << "--------------------End of Local Run------------------------"
      << G4endl
      << "  The run was " << nofEvents << " "<< partName;
-  }      
+  }
+  
   G4cout
-     << "; Nb of 'good' e+ annihilations: " << fGoodEvents.GetValue()  << G4endl
-     << " Total dose in patient : " << G4BestUnit(fSumDose.GetValue(),"Dose") 
-     << G4endl 
+     << "; Number of photons " << fPhotons.GetValue()  << G4endl
      << "------------------------------------------------------------" << G4endl 
      << G4endl;
 }

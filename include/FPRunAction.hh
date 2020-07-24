@@ -1,6 +1,10 @@
 /// This code was created based on B3a example
 /// Date created: May 27, 2020
 /// Authors: hexc. Zachary Langford and Nadia Qutob
+///
+/// Updated: July 24, 2020 hexc, Nadia and Zachary
+///         Cleaned up the code and added total photon counts at the end of Run
+///
 
 #ifndef FPRunAction_h
 #define FPRunAction_h 1
@@ -20,12 +24,10 @@ class FPRunAction : public G4UserRunAction
     virtual void BeginOfRunAction(const G4Run*);
     virtual void   EndOfRunAction(const G4Run*);
 
-    void CountEvent()           { fGoodEvents += 1; };
-    void SumDose(G4double dose) { fSumDose += dose; };  
+    void CountPhoton()           { fPhotons += 1; };
 
 private:
-    G4Accumulable<G4int>    fGoodEvents;
-    G4Accumulable<G4double> fSumDose;  
+    G4Accumulable<G4int>    fPhotons;
 };
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
