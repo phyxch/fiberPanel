@@ -24,7 +24,6 @@ public:
   ~SiPMHit();
   // print on screen a Hit
   void Print();
-  void PrintAllHits();
 
 public:
   inline void *operator  new(size_t);

@@ -42,6 +42,48 @@ void FPEventAction::BeginOfEventAction(const G4Event* /*evt*/)
 
 void FPEventAction::EndOfEventAction(const G4Event* evt )
 {
+
+  /*
+
+  // Drift chambers hits
+  for (G4int iDet = 0; iDet < kDim; ++iDet) {
+    auto hc = GetHC(event, fDriftHCID[iDet]);
+    if ( ! hc ) return;
+
+    auto nhit = hc->GetSize();
+    analysisManager->FillH1(fDriftHistoID[kH1][iDet], nhit );
+    // columns 0, 1
+    analysisManager->FillNtupleIColumn(iDet, nhit);
+  
+    for (unsigned long i = 0; i < nhit; ++i) {
+      auto hit = static_cast<B5DriftChamberHit*>(hc->GetHit(i));
+      auto localPos = hit->GetLocalPos();
+      analysisManager->FillH2(fDriftHistoID[kH2][iDet], localPos.x(), localPos.y());
+    }
+  }
+
+
+  auto hce = event->GetHCofThisEvent();
+  if (!hce) {
+      G4ExceptionDescription msg;
+      msg << "No hits collection of this event found." << G4endl; 
+      G4Exception("B5EventAction::EndOfEventAction()",
+                  "B5Code001", JustWarning, msg);
+      return nullptr;
+  }
+
+  auto hc = hce->GetHC(collId);
+  if ( ! hc) {
+    G4ExceptionDescription msg;
+    msg << "Hits collection " << collId << " of this event not found." << G4endl; 
+    G4Exception("B5EventAction::EndOfEventAction()",
+                "B5Code001", JustWarning, msg);
+  }
+  return hc; 
+
+   */
+
+  
   //Hits collections
   //  
   G4HCofThisEvent* HCE = evt->GetHCofThisEvent();
@@ -51,8 +93,15 @@ void FPEventAction::EndOfEventAction(const G4Event* evt )
   G4SDManager* SDMan = G4SDManager::GetSDMpointer();  
   G4int HCID   = SDMan->GetCollectionID("SiPMHitCollection");
 
-  G4THitsMap<G4int>* evtMap = 
-  (G4THitsMap<G4int>*)(HCE->GetHC(HCID));
+  auto hc = HCE->GetHC(HCID);
+  if (hc->GetSize() > 0) {
+    G4cout << "The size of the Hit Collection of This Event: " << hc->GetSize() << G4endl;
+    fRunAction->CountPhoton();
+  }
+  
+  /*
+    
+  G4THitsMap<G4int>* evtMap =  (G4THitsMap<G4int>*)(HCE->GetHC(HCID));
   
   std::map<G4int,G4int*>::iterator itr;
   
@@ -62,9 +111,8 @@ void FPEventAction::EndOfEventAction(const G4Event* evt )
   }  
 
   // Ask Run action to update photon counts
-  if (photonCount > 0)
-  fRunAction->CountPhoton();
-
+  if (photonCount > 0) fRunAction->CountPhoton();
+  */
 }  
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......

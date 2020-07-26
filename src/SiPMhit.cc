@@ -18,7 +18,7 @@ G4Allocator<SiPMHit> SiPMHitAllocator;
 SiPMHit::SiPMHit()
 {
   //  eDep = 0.0;
-  photonCounts = 1;
+  photonCounts = 0;
 }
 
 SiPMHit::~SiPMHit()
@@ -30,10 +30,3 @@ void SiPMHit::Print()
   G4cout<<"     Print:: Pos = "<< position <<G4endl;
   G4cout <<"    Print:: phton counts = " << photonCounts << G4endl;
 }
-
-void SiPMHit::PrintAllHits()
-{
-  G4cout<<"     PrintAllHits::  Pos = "<< position <<G4endl;
-  G4cout <<"    PrintAllHits::  phton counts = " << photonCounts << G4endl;
-}
-

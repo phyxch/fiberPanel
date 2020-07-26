@@ -44,6 +44,7 @@ G4bool FPSiPMSD::ProcessHits(G4Step *step, G4TouchableHistory *)
   
   //  auto hit = new B5HodoscopeHit(copyNo,hitTime);
   auto hit = new SiPMHit();
+  hit->AddPhotonCount();
 
   //  auto physical = touchable->GetVolume();
   //  hit->SetLogV(physical->GetLogicalVolume());
