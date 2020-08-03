@@ -31,11 +31,13 @@ public:
   
   const G4ParticleGun* GetParticleGun() const { return fParticleGun; }
   inline void SetGunPosition(G4ThreeVector aVec){gunPosition = aVec;}
-  
+  inline void SetGunParticleType(G4int  nType){particleType = nType;}
+
 private:
   G4ParticleGun*  fParticleGun;
   FPPrimaryGeneratorMessenger* generatorMessenger;
   G4ThreeVector  gunPosition;
+  G4int particleType;   // 0: optical photon, 1: muons 
 };
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......

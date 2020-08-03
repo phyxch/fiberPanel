@@ -22,6 +22,10 @@
 // July 10, 2020: Hexc, Nadia and Zachary
 //                        Update the detector components construction in the following hierarchy
 //                        World <-  Aluminum wrapping <- Panel <- glue <- cladding <- fiber core
+//
+// August 3, 2020: Hexc, Nadia and Zachary
+//                        Add scintilation parameters for the Panel (i.e., EJ-200 scintillator).
+//
 
 #include "FPDetectorConstruction.hh"
 
@@ -233,8 +237,8 @@ G4VPhysicalVolume* FPDetectorConstruction::Construct()
   
   G4PVPlacement* sipmPV = new G4PVPlacement(0,                 //no rotation
 					     G4ThreeVector( (0.5*panelXY+padding_1+0.5*(padding_2-padding_1)), 0, 0.445*panelZ ),         //at (0,0,0)
-					     sipmLV,                //its logical volume
-					     "sipmPV",             //its name
+					     sipmLV,                        //its logical volume
+					     "sipmPV",                     //its name
 					     WorldLV,                      //its mother  volume
 					     false,                            //no boolean operation
 					     0,                                  //copy number
@@ -348,6 +352,10 @@ G4VPhysicalVolume* FPDetectorConstruction::Construct()
   //
   // Define optical material properties for panel
   //
+  // We use EJ-200 plastic scintillator for this study. The optical properties can be found from the link below:
+  // https://eljentechnology.com/products/plastic-scintillators/ej-200-ej-204-ej-208-ej-212
+  //
+
   G4double photonEnergy[] =
   {2.00*eV,2.03*eV,2.06*eV,2.09*eV,2.12*eV,
    2.15*eV,2.18*eV,2.21*eV,2.24*eV,2.27*eV,
@@ -401,6 +409,19 @@ G4VPhysicalVolume* FPDetectorConstruction::Construct()
   Panel->AddProperty("RINDEX", photonEnergy, RefractiveIndex_Panel, nEntries);
   Panel->AddProperty("REFLECTIVITY", photonEnergy, PanelReflect, nEntries);
   Panel->AddProperty("ABSLENGTH", photonEnergy, Absorption_Panel, nEntries);
+  
+  // For EJ-200 scintillator
+  G4double ScintEnergy[] = {2.48*eV, 3.1*eV};
+  G4double ScintFast[] = {1.0, 1.0};
+  
+  const G4int nScintEntries = sizeof(ScintEnergy)/sizeof(G4double);
+  Panel->AddProperty("FASTCOMPONENT", ScintEnergy, ScintFast, nScintEntries);
+  
+  Panel->AddConstProperty("SCINTILLATIONYIELD", 10000/MeV);
+  Panel->AddConstProperty("RESOLUTIONSCALE", 1.);
+  Panel->AddConstProperty("FASTTIMECONSTANT", 1.*ns);
+  Panel->AddConstProperty("YIELDRATIO", 1.);
+  
   // set in the panel material property
   panel_mat->SetMaterialPropertiesTable(Panel);
 

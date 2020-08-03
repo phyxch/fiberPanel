@@ -15,6 +15,9 @@
 ///          kBoundary 	Boundary process index.
 ///          kWLS 	Wave Length Shifting process index.
 ///          kNoProcess 	Number of processes, no selected process.
+///
+/// August 3, 2020: Added control parameters for the scintillation process.
+///
 
 /// \file fiberPanelMain.cc
 
@@ -142,13 +145,23 @@ int main(int argc,char** argv)
   // Now add and configure optical physics
   //
   G4OpticalPhysics* opticalPhysics = new G4OpticalPhysics();
-  phys->RegisterPhysics(opticalPhysics);
   //opticalPhysics->Configure(kCerenkov, true);
   //opticalPhysics->SetCerenkovStackPhotons(false);
-  opticalPhysics->Configure(kScintillation, true);
+  opticalPhysics->Configure(kScintillation, true);  
   opticalPhysics->Configure(kAbsorption, true); 
   opticalPhysics->Configure(kBoundary, true);      
-  opticalPhysics->Configure(kWLS, true); 
+  opticalPhysics->Configure(kWLS, true);
+
+  // Set control parameters for scintillation
+  // Followed from: 
+  // https://indico.cern.ch/event/789510/contributions/3279418/attachments/1818134/2972494/AH_OpticalPhotons_slides.pdf
+  opticalPhysics->SetScintillationYieldFactor(1.0);
+  opticalPhysics->SetScintillationExcitationRatio(0.0);
+
+  opticalPhysics->SetMaxNumPhotonsPerStep(100);
+  opticalPhysics->SetMaxBetaChangePerStep(10.0);
+  
+  phys->RegisterPhysics(opticalPhysics);
   phys->DumpList();
   
   //auto physicsList = new FTFP_BERT;
