@@ -7,7 +7,10 @@
 ///
 ///                 June 19, 2020: Hexc, Zachary and Nadia
 ///                 Implementing event generator messenger: i.e. particle gun position (x, y, z)
-///                   
+///
+///                 August 5, 2020: Hexc and Zachary
+///                 Implementing particle type options:
+///                      partileType:   0 - optical photons (default);   1 - muons
 
 #include "FPPrimaryGeneratorAction.hh"
 #include "FPPrimaryGeneratorMessenger.hh"
@@ -23,6 +26,7 @@
 #include "G4ChargedGeantino.hh"
 #include "G4SystemOfUnits.hh"
 #include "Randomize.hh"
+#include "G4UnitsTable.hh"
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
@@ -42,17 +46,8 @@ FPPrimaryGeneratorAction::FPPrimaryGeneratorAction()
   fParticleGun->SetParticleMomentumDirection(G4ThreeVector(0.,0.,1.));
   fParticleGun->SetParticleEnergy(50.*MeV);
 
-  /*
-  G4ParticleTable* particleTable = G4ParticleTable::GetParticleTable();
-  G4ParticleDefinition* particle
-                    = particleTable->FindParticle("chargedgeantino");
-  fParticleGun->SetParticleDefinition(particle);
-  fParticleGun->SetParticlePosition(G4ThreeVector(0.,0.,0.));
-  fParticleGun->SetParticleEnergy(1*eV);    
-  fParticleGun->SetParticleMomentumDirection(G4ThreeVector(1.,0.,0.));
-  */
-
-  gunPosition = G4ThreeVector(0.0*cm, 0.0*cm, 0.0*cm);     
+  gunPosition = G4ThreeVector(0.0*cm, 0.0*cm, 0.0*cm);
+  particleType = 0;   // Optical photon is the default particle type
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
@@ -79,69 +74,63 @@ void FPPrimaryGeneratorAction::GeneratePrimaries(G4Event* anEvent)
 
   G4double xPos, yPos, zPos, xVec, yVec, zVec;
   G4double sigmaAngle, theta, phi, momentum, sigmaMomentum, mass, pp, Ekin;
-  G4int pid;
 
-  pid = 3;   // tmp pID
-  particle = particleTable->FindParticle("opticalphoton");
-  fParticleGun->SetParticleDefinition(particle);
-  
-  G4int npart = 1;
-  for (G4int i=1; i<=npart; i++) {
-    //		Ekin = ( 1.7+(4.8-1.7)*G4UniformRand() )*eV;   // 1.7-4.8eV ~= 200-600 nm
-    //Ekin = ( 2.58+(3.1-2.58)*G4UniformRand() )*eV;   // 2.58-3.1eV ~= 400-480 nm
-    Ekin = ( 2.034+(4.136-2.034)*G4UniformRand() )*eV;   // 2.58-3.1eV ~= 200-700 nm
+  if (particleType == 0) {
+    //
+    // Generate optical photons
+    //
+    particle = particleTable->FindParticle("opticalphoton");
+    fParticleGun->SetParticleDefinition(particle);
+    
+    G4int npart = 1;
+    for (G4int i=1; i<=npart; i++) {
+      //Ekin = ( 1.7+(4.8-1.7)*G4UniformRand() )*eV;   // 1.7-4.8eV ~= 200-600 nm
+      //Ekin = ( 2.58+(3.1-2.58)*G4UniformRand() )*eV;   // 2.58-3.1eV ~= 400-480 nm
+      Ekin = ( 2.034+(4.136-2.034)*G4UniformRand() )*eV;   // 2.58-3.1eV ~= 200-700 nm
+      fParticleGun->SetParticleEnergy(Ekin);
+      
+      fParticleGun->SetParticlePosition(gunPosition); 
+      
+      theta = G4UniformRand()*180*deg;
+      phi = G4UniformRand()*360.*deg;
+      yVec = std::sin(phi)*std::sin(theta);
+      zVec = std::cos(theta);
+      xVec = std::cos(phi)*std::sin(theta);
+      fParticleGun->SetParticleMomentumDirection(G4ThreeVector(xVec, yVec, zVec));
+      //fParticleGun->SetParticleMomentumDirection(G4ThreeVector(0., -1, 0.));
+      
+      fParticleGun->GeneratePrimaryVertex(anEvent);
+    }
+  } else if (particleType == 1) {
+    //
+    // Generating muons:
+    //   Launch one mu- particle for each event
+    //
+    particle = particleTable->FindParticle("mu-");
+    fParticleGun->SetParticleDefinition(particle);
+    
+    Ekin = ( 2.0+4.0*G4UniformRand() )*GeV;   // muon kinetic energy range: 2 to 6 GeV
     fParticleGun->SetParticleEnergy(Ekin);
-
-    /*
-    yPos = 0.0*10*cm;    
-    xPos = 0.0*10*cm; 
-    zPos = 0.8*5*mm;   
-    fParticleGun->SetParticlePosition(G4ThreeVector(xPos, yPos, zPos)); 
-    */
-    
+      
     fParticleGun->SetParticlePosition(gunPosition); 
-    
-    theta = G4UniformRand()*180*deg;
-    //theta = 90.0*deg;
+      
+    theta = G4UniformRand()*45*deg;
     phi = G4UniformRand()*360.*deg;
     yVec = std::sin(phi)*std::sin(theta);
-    zVec = std::cos(theta);
+    zVec = -std::cos(theta);
     xVec = std::cos(phi)*std::sin(theta);
     fParticleGun->SetParticleMomentumDirection(G4ThreeVector(xVec, yVec, zVec));
-    //fParticleGun->SetParticleMomentumDirection(G4ThreeVector(0., -1, 0.));
+
+    G4cout << "Muon KE:  " << Ekin/GeV << " (GeV),   Position (x, y, z) : " << G4BestUnit(gunPosition.getX(), "Length");
+    G4cout << "   " << G4BestUnit(gunPosition.getY(), "Length") << "   " << G4BestUnit(gunPosition.getZ(), "Length") << G4endl;
+    G4cout << "Direction (xVec, yVec, zVec): " << xVec << ", " << yVec << ", " << zVec << G4endl;
     
     fParticleGun->GeneratePrimaryVertex(anEvent);
-    
-    /*  This section of the code is from the example 3Ba 
-	G4ParticleDefinition* particle = fParticleGun->GetParticleDefinition();
-	if (particle == G4ChargedGeantino::ChargedGeantino()) {
-	//fluorine 
-	G4int Z = 9, A = 18;
-	G4double ionCharge   = 0.*eplus;
-	G4double excitEnergy = 0.*keV;
-	
-	G4ParticleDefinition* ion
-	= G4IonTable::GetIonTable()->GetIon(Z,A,excitEnergy);
-	fParticleGun->SetParticleDefinition(ion);
-	fParticleGun->SetParticleCharge(ionCharge);
-	}
-	
-	// randomized position
-	//
-	///G4double x0  = 0*cm, y0  = 0*cm, z0  = 0*cm;
-	///G4double dx0 = 0*cm, dy0 = 0*cm, dz0 = 0*cm;   
-	G4double x0  = 4*cm, y0  = 4*cm, z0  = 4*cm;
-	G4double dx0 = 1*cm, dy0 = 1*cm, dz0 = 1*cm; 
-	x0 += dx0*(G4UniformRand()-0.5);
-	y0 += dy0*(G4UniformRand()-0.5);
-	z0 += dz0*(G4UniformRand()-0.5);
-	fParticleGun->SetParticlePosition(G4ThreeVector(x0,y0,z0));
-	
-	//create vertex
-	//
-	fParticleGun->GeneratePrimaryVertex(anEvent);
-    */
+  } else {
+    // You should not get to here
+    G4cout << "Choose a particle type, dummy! " << G4endl;
   }
-}  
-  //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
+}
+
+//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
   

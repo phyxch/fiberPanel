@@ -5,6 +5,7 @@
 #include "FPActionInitialization.hh"
 #include "FPRunAction.hh"
 #include "FPEventAction.hh"
+#include "FPSteppingAction.hh"
 #include "FPPrimaryGeneratorAction.hh"
 #include "FPStackingAction.hh"
 
@@ -33,9 +34,13 @@ void FPActionInitialization::Build() const
   FPRunAction* runAction = new FPRunAction();
   SetUserAction(runAction);
 
-  SetUserAction(new FPEventAction(runAction));
+  FPEventAction* evtAction = new FPEventAction(runAction);
+  SetUserAction(evtAction);
+  
   SetUserAction(new FPPrimaryGeneratorAction);
   SetUserAction(new FPStackingAction);
+
+  SetUserAction(new FPSteppingAction(evtAction));  
 }  
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
