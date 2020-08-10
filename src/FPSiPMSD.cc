@@ -85,7 +85,8 @@ void FPSiPMSD::Initialize(G4HCofThisEvent* HCE)
 
 void FPSiPMSD::EndOfEvent(G4HCofThisEvent* HE)
 {
-  photonHitCollection->PrintAllHits();
+  // Remove accessive print out
+  //  photonHitCollection->PrintAllHits();
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......

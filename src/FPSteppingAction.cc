@@ -36,7 +36,11 @@ void FPSteppingAction::UserSteppingAction(const G4Step* step)
     
     // energy deposit
     auto edep = step->GetTotalEnergyDeposit();
-    if (edep > 0.) G4cout << " Energy deposit (in stepping action): " << G4BestUnit(edep, "Energy") << G4endl;
+    fEventAction->AddELoss(edep);
+      
+    //if (edep > 0.) G4cout << " Energy deposit (in stepping action): " << G4BestUnit(edep, "Energy") << G4endl;
+    if (edep <= 0.) G4cout << " Energy deposit (in stepping action): " << G4BestUnit(edep, "Energy") << G4endl;
+    
     
     /*
     // step length
