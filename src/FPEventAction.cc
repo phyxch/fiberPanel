@@ -73,7 +73,7 @@ void FPEventAction::EndOfEventAction(const G4Event* evt )
     fRunAction->CountPhoton();
   }
 
-  G4cout << "Number of tracking steps: " << totalSteps << "     Total ELoss: " << totalEloss << G4endl;
+  G4cout << "Number of tracking steps: " << totalSteps << "     Total ELoss: " << G4BestUnit(totalEloss, "Energy")<< G4endl;
   
   /*
   G4THitsMap<G4int>* evtMap =  (G4THitsMap<G4int>*)(HCE->GetHC(HCID));
