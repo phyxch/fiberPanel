@@ -4,7 +4,10 @@
 ///
 /// Updated: July 24, 2020 hexc, Nadia and Zachary
 ///         Cleaned up the code and added total photon counts at the end of Run
-//
+///
+///Updated:  Sep 23, 2020 hexc & Zachary
+///         Added analyzing histograms for photons collected by SiPM
+///         
 
 #include "FPRunAction.hh"
 #include "FPPrimaryGeneratorAction.hh"
@@ -14,6 +17,10 @@
 #include "G4AccumulableManager.hh"
 #include "G4UnitsTable.hh"
 #include "G4SystemOfUnits.hh"
+#include "G4RootAnalysisManager.hh"
+
+//#include "g4root.hh"
+
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
@@ -40,6 +47,14 @@ void FPRunAction::BeginOfRunAction(const G4Run* run)
   // reset accumulables to their initial values
   G4AccumulableManager* accumulableManager = G4AccumulableManager::Instance();
   accumulableManager->Reset();
+
+  G4RootAnalysisManager* analysisManager = G4RootAnalysisManager::Instance();
+  analysisManager->SetVerboseLevel(1);
+  // Open an output file  
+  analysisManager->OpenFile("fiberPanel.root"); 
+  // Create histograms  
+  analysisManager->CreateH1("nPhotons", "Number of Photons", 100, 0, 100);  
+  analysisManager->CreateH1("eLoss", "ELoss", 100, 0, 100);  
   
   //inform the runManager to save random number seed
   G4RunManager::GetRunManager()->SetRandomNumberStore(false);
@@ -93,6 +108,13 @@ void FPRunAction::EndOfRunAction(const G4Run* run)
      << "; Number of photons " << fPhotons.GetValue()  << G4endl
      << "------------------------------------------------------------" << G4endl 
      << G4endl;
+
+  // Get analysis manager
+  G4RootAnalysisManager* analysisManager = G4RootAnalysisManager::Instance();
+  // Write and close the output file
+  analysisManager->Write();  
+  analysisManager->CloseFile();
+
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......

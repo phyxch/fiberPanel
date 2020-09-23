@@ -10,7 +10,9 @@
 ///
 /// Updated: August 10, 2020 hexc, Nadia and Zachary
 ///         Add summary info at the end of each event:  # of steps and the muon eLoss sum.
-///
+///Updated:  Sep 23, 2020 hexc & Zachary
+///         Added analyzing histograms for photons collected by SiPM
+/// 
 
 #include "FPEventAction.hh"
 #include "FPRunAction.hh"
@@ -23,6 +25,8 @@
 #include "G4THitsMap.hh"
 #include "G4UnitsTable.hh"
 #include "G4SystemOfUnits.hh"
+#include "G4RootAnalysisManager.hh"
+//#include "g4root.hh"
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
@@ -74,7 +78,11 @@ void FPEventAction::EndOfEventAction(const G4Event* evt )
   }
 
   G4cout << "Number of tracking steps: " << totalSteps << "     Total ELoss: " << G4BestUnit(totalEloss, "Energy")<< G4endl;
-  
+
+  G4RootAnalysisManager* analysisManager = G4RootAnalysisManager::Instance();
+  analysisManager->FillH1(0, hc->GetSize());
+  analysisManager->FillH1(1, totalEloss);
+
   /*
   G4THitsMap<G4int>* evtMap =  (G4THitsMap<G4int>*)(HCE->GetHC(HCID));
   
