@@ -54,7 +54,7 @@ void FPRunAction::BeginOfRunAction(const G4Run* run)
   analysisManager->OpenFile("fiberPanel.root"); 
   // Create histograms  
   analysisManager->CreateH1("nPhotons", "Number of Photons", 100, 0, 100);  
-  analysisManager->CreateH1("eLoss", "ELoss", 100, 0, 100);  
+  analysisManager->CreateH1("eLoss", "ELoss", 300, 0, 3);  
   
   //inform the runManager to save random number seed
   G4RunManager::GetRunManager()->SetRandomNumberStore(false);
