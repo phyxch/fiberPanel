@@ -210,7 +210,7 @@ G4VPhysicalVolume* FPDetectorConstruction::Construct()
     new G4Box("WrappingBox1",                                                                                             //its name
 	      0.5*panelXY+padding_1, 0.5*panelXY+padding_1, 0.5*panelZ+padding_1);          //its size
 
-  // Gibber box for making the wrapping material
+  // Bigger box for making the wrapping material
   G4Box* solidWrappingBox_2 =    
     new G4Box("WrappingBox2",                                                                                             //its name
 	      0.5*panelXY+padding_2, 0.5*panelXY+padding_2, 0.5*panelZ+padding_2);          //its size
