@@ -66,14 +66,14 @@ FPDetectorConstruction::FPDetectorConstruction()
 
   // For Kuaray Y-11 fiber
   claddingD = 1.0*mm;
-  claddingL = panelXY;
+  claddingL = panelXY-0.01*mm;
   //grooveL = fiberL;
   //grooveD = 1.01*fiberD;
 
-  fiberL = claddingL;
+  fiberL = claddingL-0.01*mm;
   fiberD = claddingD-0.06*mm;
 
-  epoxyL = fiberL;
+  epoxyL = panelXY - 0.005*mm;
   epoxyD = 1.1*claddingD;
  
 }
@@ -96,7 +96,7 @@ void FPDetectorConstruction::DefineMaterials()
   G4Element* Cl = man->FindOrBuildElement("Cl", isotopes);
   G4Element* N = man->FindOrBuildElement("N", isotopes);
   G4Element* H = man->FindOrBuildElement("H",isotopes);
-  G4Element*  C = man->FindOrBuildElement("C" , isotopes);   
+  G4Element*  C = man->FindOrBuildElement("C" , isotopes);
 
   G4Material* EJ200_panel = new G4Material("EJ200", 1.023*g/cm3, 2);
   EJ200_panel->AddElement(H, fractionmass=52.43*perCent);
@@ -120,8 +120,6 @@ void FPDetectorConstruction::DefineMaterials()
   WLS_Y11_cladding->AddElement(H, fractionmass=53.27*perCent );
   WLS_Y11_cladding->AddElement(O, fractionmass=13.08*perCent );
 
-  
-  
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
@@ -308,8 +306,8 @@ G4VPhysicalVolume* FPDetectorConstruction::Construct()
   
   G4LogicalVolume* CladdingLV =                         
     new G4LogicalVolume(solidCladding,       //its solid
-                        cladding_mat,                          //its material
-                        "CladdingLV");                        //its name
+                        cladding_mat,        //its material
+                        "CladdingLV");       //its name
   
   // Put cladding inside the Epoxy
   G4PVPlacement* CladdingPV = new G4PVPlacement(0,                                       
@@ -356,7 +354,8 @@ G4VPhysicalVolume* FPDetectorConstruction::Construct()
   // https://eljentechnology.com/products/plastic-scintillators/ej-200-ej-204-ej-208-ej-212
   //
 
-  G4double photonEnergy[] =
+  //  G4double photonEnergy[] =
+  std::vector<G4double> photonEnergy=
   {2.00*eV,2.03*eV,2.06*eV,2.09*eV,2.12*eV,
    2.15*eV,2.18*eV,2.21*eV,2.24*eV,2.27*eV,
    2.30*eV,2.33*eV,2.36*eV,2.39*eV,2.42*eV,
@@ -369,8 +368,8 @@ G4VPhysicalVolume* FPDetectorConstruction::Construct()
    3.35*eV,3.38*eV,3.41*eV,3.44*eV,3.47*eV};
 
   const G4int nEntries = sizeof(photonEnergy)/sizeof(G4double);
-    
-  G4double RefractiveIndex_Panel[] =                                              // from EJEN website
+  
+  std::vector<G4double> RefractiveIndex_Panel =                                              // from EJEN website
     {1.58, 1.58, 1.58, 1.58, 1.58, 1.58, 1.58, 1.58, 1.58, 1.58,
      1.58, 1.58, 1.58, 1.58, 1.58, 1.58, 1.58, 1.58, 1.58, 1.58,
      1.58, 1.58, 1.58, 1.58, 1.58, 1.58, 1.58, 1.58, 1.58, 1.58,
@@ -379,18 +378,18 @@ G4VPhysicalVolume* FPDetectorConstruction::Construct()
   
   assert(sizeof(RefractiveIndex_Panel) == sizeof(photonEnergy));
   
-  G4double Absorption_Panel[] =                                                      // from EJEN website
+  std::vector<G4double> Absorption_Panel =                                                      // from EJEN website
     {3.8*m, 3.8*m, 3.8*m, 3.8*m, 3.8*m, 3.8*m, 3.8*m, 3.8*m, 3.8*m, 3.8*m,
      3.8*m, 3.8*m, 3.8*m, 3.8*m, 3.8*m, 3.8*m, 3.8*m, 3.8*m, 3.8*m, 3.8*m,
      3.8*m, 3.8*m, 3.8*m, 3.8*m, 3.8*m, 3.8*m, 3.8*m, 3.8*m, 3.8*m, 3.8*m,
      3.8*m, 3.8*m, 3.8*m, 3.8*m, 3.8*m, 3.8*m, 3.8*m, 3.8*m, 3.8*m, 3.8*m,
      3.8*m, 3.8*m, 3.8*m, 3.8*m, 3.8*m, 3.8*m, 3.8*m, 3.8*m, 3.8*m, 3.8*m
     };
-
+  
   assert(sizeof(Absorption_Panel) == sizeof(photonEnergy));
 
   // Adjusted for scintillator panel
-  G4double PanelReflect[]      =
+  std::vector<G4double> PanelReflect =
     {0.95, 0.95, 0.95, 0.95, 0.95, 0.95, 0.95, 0.95, 0.95, 0.95,
      0.95, 0.95, 0.95, 0.95, 0.95, 0.95, 0.95, 0.95, 0.95, 0.95,
      0.95, 0.95, 0.95, 0.95, 0.95, 0.95, 0.95, 0.95, 0.95, 0.95,
@@ -406,21 +405,32 @@ G4VPhysicalVolume* FPDetectorConstruction::Construct()
   //  G4double Backscatter[NUM]     = {0.2, 0.2};       // need to check these values
   
   G4MaterialPropertiesTable *Panel = new G4MaterialPropertiesTable();
-  Panel->AddProperty("RINDEX", photonEnergy, RefractiveIndex_Panel, nEntries);
-  Panel->AddProperty("REFLECTIVITY", photonEnergy, PanelReflect, nEntries);
-  Panel->AddProperty("ABSLENGTH", photonEnergy, Absorption_Panel, nEntries);
+  //  Panel->AddProperty("RINDEX", photonEnergy, RefractiveIndex_Panel, nEntries);
+  //  Panel->AddProperty("REFLECTIVITY", photonEnergy, PanelReflect, nEntries);
+  //  Panel->AddProperty("ABSLENGTH", photonEnergy, Absorption_Panel, nEntries);
+  Panel->AddProperty("RINDEX", photonEnergy, RefractiveIndex_Panel);
+  Panel->AddProperty("REFLECTIVITY", photonEnergy, PanelReflect);
+  Panel->AddProperty("ABSLENGTH", photonEnergy, Absorption_Panel);  
   
   // For EJ-200 scintillator
-  G4double ScintEnergy[] = {2.48*eV, 3.1*eV};
-  G4double ScintFast[] = {1.0, 1.0};
+  //G4double ScintEnergy[] = {2.48*eV, 3.1*eV};
+  //G4double ScintFast[] = {1.0, 1.1};
+  //const G4int nScintEntries = sizeof(ScintEnergy)/sizeof(G4double);
+  //  Panel->AddProperty("FASTCOMPONENT", ScintEnergy, ScintFast, nScintEntries);
+  std::vector<G4double> ScintFast =
+    {1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
+     1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
+     1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
+     1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
+     1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0};
   
-  const G4int nScintEntries = sizeof(ScintEnergy)/sizeof(G4double);
-  Panel->AddProperty("FASTCOMPONENT", ScintEnergy, ScintFast, nScintEntries);
+  Panel->AddProperty("SCINTILLATIONCOMPONENT1", photonEnergy, ScintFast);
   
   Panel->AddConstProperty("SCINTILLATIONYIELD", 10000/MeV);
   Panel->AddConstProperty("RESOLUTIONSCALE", 1.);
-  Panel->AddConstProperty("FASTTIMECONSTANT", 1.*ns);
-  Panel->AddConstProperty("YIELDRATIO", 1.);
+  //  Panel->AddConstProperty("FASTTIMECONSTANT", 1.*ns);
+  Panel->AddConstProperty("SCINTILLATIONTIMECONSTANT1", 1.*ns);
+  Panel->AddConstProperty("SCINTILLATIONYIELD1", 1.);
   
   // set in the panel material property
   panel_mat->SetMaterialPropertiesTable(Panel);
@@ -428,7 +438,7 @@ G4VPhysicalVolume* FPDetectorConstruction::Construct()
   //
   // Define optical material properties for air
   //
-  G4double RefractiveIndex_Air[] =
+  std::vector<G4double> RefractiveIndex_Air =
     {1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
      1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
      1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
@@ -437,7 +447,7 @@ G4VPhysicalVolume* FPDetectorConstruction::Construct()
   
   assert(sizeof(RefractiveIndex_Air) == sizeof(photonEnergy));
   
-  G4double Absorption_Air[] =
+  std::vector<G4double> Absorption_Air =
     {10.0*m, 10.0*m, 10.0*m, 10.0*m, 10.0*m, 10.0*m, 10.0*m, 10.0*m, 10.0*m, 10.0*m,
      10.0*m, 10.0*m, 10.0*m, 10.0*m, 10.0*m, 10.0*m, 10.0*m, 10.0*m, 10.0*m, 10.0*m,
      10.0*m, 10.0*m, 10.0*m, 10.0*m, 10.0*m, 10.0*m, 10.0*m, 10.0*m, 10.0*m, 10.0*m,
@@ -448,18 +458,18 @@ G4VPhysicalVolume* FPDetectorConstruction::Construct()
   assert(sizeof(Absorption_Air) == sizeof(photonEnergy));
 
   // Need to check this parameter for air  6/22/2020
-  G4double AirReflect[]      =
+  std::vector<G4double> AirReflect      =
     {0.98, 0.98, 0.98, 0.98, 0.98, 0.98, 0.98, 0.98, 0.98, 0.98,
      0.98, 0.98, 0.98, 0.98, 0.98, 0.98, 0.98, 0.98, 0.98, 0.98,
      0.98, 0.98, 0.98, 0.98, 0.98, 0.98, 0.98, 0.98, 0.98, 0.98,
      0.98, 0.98, 0.98, 0.98, 0.98, 0.98, 0.98, 0.98, 0.98, 0.98,
      0.98, 0.98, 0.98, 0.98, 0.98, 0.98, 0.98, 0.98, 0.98, 0.98
     }; 
-
+  
   assert(sizeof(AirReflect) == sizeof(photonEnergy));
   
   G4MaterialPropertiesTable *Air = new G4MaterialPropertiesTable();
-  Air->AddProperty("RINDEX", photonEnergy, RefractiveIndex_Air, nEntries);
+  Air->AddProperty("RINDEX", photonEnergy, RefractiveIndex_Air);
   // Note 100% sure if one needs to define the following two properties or not.
   //  Air->AddProperty("REFLECTIVITY", photonEnergy, AirReflect, nEntries);
   //  Air->AddProperty("ABSLENGTH", photonEnergy, Absorption_Air, nEntries);
@@ -467,7 +477,7 @@ G4VPhysicalVolume* FPDetectorConstruction::Construct()
   default_mat->SetMaterialPropertiesTable(Air);  
   
   // For Expoxy (EJ-500)
-  G4double refractiveIndexEpoxy[] =
+  std::vector<G4double> refractiveIndexEpoxy =
   { 1.57, 1.57, 1.57, 1.57, 1.57, 1.57, 1.57, 1.57, 1.57, 1.57,
     1.57, 1.57, 1.57, 1.57, 1.57, 1.57, 1.57, 1.57, 1.57, 1.57,
     1.57, 1.57, 1.57, 1.57, 1.57, 1.57, 1.57, 1.57, 1.57, 1.57,
@@ -477,14 +487,14 @@ G4VPhysicalVolume* FPDetectorConstruction::Construct()
   assert(sizeof(refractiveIndexEpoxy) == sizeof(photonEnergy));
 
   G4MaterialPropertiesTable *Epoxy = new G4MaterialPropertiesTable();
-  Epoxy->AddProperty("RINDEX", photonEnergy, refractiveIndexEpoxy, nEntries);
-  Epoxy->AddProperty("REFLECTIVITY", photonEnergy, PanelReflect, nEntries);    // same as for panel. May not need!
-  Epoxy->AddProperty("ABSLENGTH", photonEnergy, Absorption_Panel, nEntries);     // same as for panel  for now !
+  Epoxy->AddProperty("RINDEX", photonEnergy, refractiveIndexEpoxy);
+  Epoxy->AddProperty("REFLECTIVITY", photonEnergy, PanelReflect);    // same as for panel. May not need!
+  Epoxy->AddProperty("ABSLENGTH", photonEnergy, Absorption_Panel);     // same as for panel  for now !
 
   epoxy_mat->SetMaterialPropertiesTable(Epoxy);
   
   // For Y11-Cladding
-  G4double refractiveIndexCladding[] =
+  std::vector<G4double> refractiveIndexCladding =
   { 1.49, 1.49, 1.49, 1.49, 1.49, 1.49, 1.49, 1.49, 1.49, 1.49,
     1.49, 1.49, 1.49, 1.49, 1.49, 1.49, 1.49, 1.49, 1.49, 1.49,
     1.49, 1.49, 1.49, 1.49, 1.49, 1.49, 1.49, 1.49, 1.49, 1.49,
@@ -494,9 +504,9 @@ G4VPhysicalVolume* FPDetectorConstruction::Construct()
   assert(sizeof(refractiveIndexCladding) == sizeof(photonEnergy));
 
   G4MaterialPropertiesTable *Cladding = new G4MaterialPropertiesTable();
-  Cladding->AddProperty("RINDEX", photonEnergy, refractiveIndexCladding, nEntries);
-  Cladding->AddProperty("REFLECTIVITY", photonEnergy, PanelReflect, nEntries);          // same as for panel. May not need!
-  Cladding->AddProperty("ABSLENGTH", photonEnergy, Absorption_Panel, nEntries);     // same as panel  for now !
+  Cladding->AddProperty("RINDEX", photonEnergy, refractiveIndexCladding);
+  Cladding->AddProperty("REFLECTIVITY", photonEnergy, PanelReflect);          // same as for panel. May not need!
+  Cladding->AddProperty("ABSLENGTH", photonEnergy, Absorption_Panel);     // same as panel  for now !
 
   cladding_mat->SetMaterialPropertiesTable(Cladding);
 
@@ -504,38 +514,38 @@ G4VPhysicalVolume* FPDetectorConstruction::Construct()
   // Define optical material properties for the fiber
   /* Copied from WLS example  6/19/2020  */
   
-  G4double refractiveIndexWLSfiber[] =
-  { 1.60, 1.60, 1.60, 1.60, 1.60, 1.60, 1.60, 1.60, 1.60, 1.60,
-    1.60, 1.60, 1.60, 1.60, 1.60, 1.60, 1.60, 1.60, 1.60, 1.60,
-    1.60, 1.60, 1.60, 1.60, 1.60, 1.60, 1.60, 1.60, 1.60, 1.60,
-    1.60, 1.60, 1.60, 1.60, 1.60, 1.60, 1.60, 1.60, 1.60, 1.60,
-    1.60, 1.60, 1.60, 1.60, 1.60, 1.60, 1.60, 1.60, 1.60, 1.60};
-
+  std::vector<G4double> refractiveIndexWLSfiber =
+    { 1.60, 1.60, 1.60, 1.60, 1.60, 1.60, 1.60, 1.60, 1.60, 1.60,
+      1.60, 1.60, 1.60, 1.60, 1.60, 1.60, 1.60, 1.60, 1.60, 1.60,
+      1.60, 1.60, 1.60, 1.60, 1.60, 1.60, 1.60, 1.60, 1.60, 1.60,
+      1.60, 1.60, 1.60, 1.60, 1.60, 1.60, 1.60, 1.60, 1.60, 1.60,
+      1.60, 1.60, 1.60, 1.60, 1.60, 1.60, 1.60, 1.60, 1.60, 1.60};
+  
   assert(sizeof(refractiveIndexWLSfiber) == sizeof(photonEnergy));
-
-  G4double absWLSfiber[] =
-  {5.40*m,5.40*m,5.40*m,5.40*m,5.40*m,5.40*m,5.40*m,5.40*m,5.40*m,5.40*m,
-   5.40*m,5.40*m,5.40*m,5.40*m,5.40*m,5.40*m,5.40*m,5.40*m,5.40*m,5.40*m,
-   5.40*m,5.40*m,5.40*m,5.40*m,5.40*m,5.40*m,5.40*m,5.40*m,5.40*m,1.10*m,
-   1.10*m,1.10*m,1.10*m,1.10*m,1.10*m,1.10*m, 1.*mm, 1.*mm, 1.*mm, 1.*mm,
-    1.*mm, 1.*mm, 1.*mm, 1.*mm, 1.*mm, 1.*mm, 1.*mm, 1.*mm, 1.*mm, 1.*mm};
-
+  
+  std::vector<G4double> absWLSfiber =
+    {5.40*m,5.40*m,5.40*m,5.40*m,5.40*m,5.40*m,5.40*m,5.40*m,5.40*m,5.40*m,
+     5.40*m,5.40*m,5.40*m,5.40*m,5.40*m,5.40*m,5.40*m,5.40*m,5.40*m,5.40*m,
+     5.40*m,5.40*m,5.40*m,5.40*m,5.40*m,5.40*m,5.40*m,5.40*m,5.40*m,1.10*m,
+     1.10*m,1.10*m,1.10*m,1.10*m,1.10*m,1.10*m, 1.*mm, 1.*mm, 1.*mm, 1.*mm,
+     1.*mm, 1.*mm, 1.*mm, 1.*mm, 1.*mm, 1.*mm, 1.*mm, 1.*mm, 1.*mm, 1.*mm};
+  
   assert(sizeof(absWLSfiber) == sizeof(photonEnergy));
-
-  G4double emissionFib[] =
-  {0.05, 0.10, 0.30, 0.50, 0.75, 1.00, 1.50, 1.85, 2.30, 2.75,
-   3.25, 3.80, 4.50, 5.20, 6.00, 7.00, 8.50, 9.50, 11.1, 12.4,
-   12.9, 13.0, 12.8, 12.3, 11.1, 11.0, 12.0, 11.0, 17.0, 16.9,
-   15.0, 9.00, 2.50, 1.00, 0.05, 0.00, 0.00, 0.00, 0.00, 0.00,
-   0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00};
-
+  
+  std::vector<G4double> emissionFib =
+    {0.05, 0.10, 0.30, 0.50, 0.75, 1.00, 1.50, 1.85, 2.30, 2.75,
+     3.25, 3.80, 4.50, 5.20, 6.00, 7.00, 8.50, 9.50, 11.1, 12.4,
+     12.9, 13.0, 12.8, 12.3, 11.1, 11.0, 12.0, 11.0, 17.0, 16.9,
+     15.0, 9.00, 2.50, 1.00, 0.05, 0.00, 0.00, 0.00, 0.00, 0.00,
+     0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00};
+  
   assert(sizeof(emissionFib) == sizeof(photonEnergy));
-
+  
   // Add entries into properties table
   G4MaterialPropertiesTable* mptWLSfiber = new G4MaterialPropertiesTable();
-  mptWLSfiber->AddProperty("RINDEX",photonEnergy,refractiveIndexWLSfiber,nEntries);
-  mptWLSfiber->AddProperty("WLSABSLENGTH",photonEnergy,absWLSfiber,nEntries);
-  mptWLSfiber->AddProperty("WLSCOMPONENT",photonEnergy,emissionFib,nEntries);
+  mptWLSfiber->AddProperty("RINDEX",photonEnergy,refractiveIndexWLSfiber);
+  mptWLSfiber->AddProperty("WLSABSLENGTH",photonEnergy,absWLSfiber);
+  mptWLSfiber->AddProperty("WLSCOMPONENT",photonEnergy,emissionFib);
   mptWLSfiber->AddConstProperty("WLSTIMECONSTANT", 0.5*ns);
 
   //
@@ -563,7 +573,7 @@ G4VPhysicalVolume* FPDetectorConstruction::Construct()
   
   // For Cladding
   G4OpticalSurface *OpticalCladding = new G4OpticalSurface("CladdingSurface");
-  OpticalCladding->SetModel(unified);
+ OpticalCladding->SetModel(unified);
   OpticalCladding->SetType(dielectric_dielectric);
   OpticalCladding->SetFinish(ground);    // ground: follows Snell's law
   

@@ -17,6 +17,9 @@
 ///          kNoProcess 	Number of processes, no selected process.
 ///
 /// August 3, 2020: Added control parameters for the scintillation process.
+/// July 17, 2024: Hexc
+///    Updated code the GEANT4 version 11.1
+///    Updated the configuration of optical physics process call.
 ///
 
 /// \file fiberPanelMain.cc
@@ -145,6 +148,7 @@ int main(int argc,char** argv)
   // Now add and configure optical physics
   //
   G4OpticalPhysics* opticalPhysics = new G4OpticalPhysics();
+  /* These were commented out on 7/17/2024. 
   //opticalPhysics->Configure(kCerenkov, true);
   //opticalPhysics->SetCerenkovStackPhotons(false);
   opticalPhysics->Configure(kScintillation, true);  
@@ -160,6 +164,7 @@ int main(int argc,char** argv)
 
   opticalPhysics->SetMaxNumPhotonsPerStep(100);
   opticalPhysics->SetMaxBetaChangePerStep(10.0);
+  */
   
   phys->RegisterPhysics(opticalPhysics);
   phys->DumpList();
