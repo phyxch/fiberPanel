@@ -345,7 +345,14 @@ G4VPhysicalVolume* FPDetectorConstruction::Construct()
   //
   WorldLV->SetVisAttributes (G4VisAttributes::GetInvisible());
   //PanelLV->SetVisAttributes (G4VisAttributes::GetInvisible());
-  //FiberLV->SetVisAttributes (G4VisAttributes::GetInvisible());    
+  //FiberLV->SetVisAttributes (G4VisAttributes::GetInvisible());
+
+  G4VisAttributes* cladding = new G4VisAttributes(G4Colour(0.3, 0.8, 0.2));
+  cladding->SetVisibility(true);
+  cladding->SetForceWireframe(false);
+  cladding->SetForceSolid(true);
+  
+  CladdingLV->SetVisAttributes(cladding);  
 
   //
   // Define optical material properties for panel
