@@ -3,7 +3,8 @@
 ///           
 /// August 3, 2020: Hexc, Zachary and Nadia
 ///                 Implementing particle type choices:  0 for optical photons; 1 for muons.
-///
+/// February 12, 2025: Hexc, Munir, Shahid, Jerad, Elsayed
+///                 Verifying the gun position and particle type
 
 #include "globals.hh"
 

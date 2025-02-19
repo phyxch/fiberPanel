@@ -31,6 +31,8 @@ public:
 public:
   virtual G4VPhysicalVolume* Construct();
   virtual void ConstructSDandField();
+  // function for reading in configuration file
+  void split(const std::string &s, char delim, std::vector<std::string> &elems);   
   
 private:
   void DefineMaterials();

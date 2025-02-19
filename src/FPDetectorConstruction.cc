@@ -26,6 +26,11 @@
 // August 3, 2020: Hexc, Nadia and Zachary
 //                        Add scintilation parameters for the Panel (i.e., EJ-200 scintillator).
 //
+// February 5, 2025: Hexc, Munir, Shahid, Jerad
+//                        Added a control parameter for positioning the fiber and the SiPM on the panel
+//
+// February 12, 2025L Hexc, Munir, Shahid, Jerad, Elsayed
+//                        Fixed the problem of positioning the opening hole for the SiPM readout.
 
 #include "FPDetectorConstruction.hh"
 
@@ -51,6 +56,10 @@
 #include "G4PhysicalConstants.hh"
 #include "G4SystemOfUnits.hh"
 #include "FPSiPMSD.hh"                           // added July 22, 2020
+
+#include <math.h>
+
+using namespace std;
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
@@ -125,7 +134,34 @@ void FPDetectorConstruction::DefineMaterials()
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
 G4VPhysicalVolume* FPDetectorConstruction::Construct()
-{  
+{
+
+  // read the data through configuration file
+  std::ifstream infile ("runConfig.txt");
+  
+  std::string line;
+  
+  // Skip two comment lines
+  std::getline(infile, line);
+  G4cout << line << G4endl;
+
+  G4double Epoxy_ypos = 0.0;
+  
+  while (std::getline(infile, line))
+  {
+    vector<string> row_values;
+
+    split(line, ',', row_values);
+
+    Epoxy_ypos = stod(row_values[0])*cm;
+    //    blockX = stod(row_values[1])*cm;
+    //    blockY = stod(row_values[2])*cm;
+    //    blockZ = stod(row_values[3])*cm;   
+  }
+
+  infile.close();
+  // end of reading the config file
+  
   // Gamma detector Parameters
   //
   G4double cryst_dX = 6*cm, cryst_dY = 6*cm, cryst_dZ = 3*cm;
@@ -232,9 +268,9 @@ G4VPhysicalVolume* FPDetectorConstruction::Construct()
   sipmLV = new G4LogicalVolume(solidSensor,
 			       default_mat,
 			       "sipmLV");
-  
+  // Positioning the SiPM to the end of the fiber, using Epoxy_ypos parameter
   G4PVPlacement* sipmPV = new G4PVPlacement(0,                 //no rotation
-					     G4ThreeVector( (0.5*panelXY+padding_1+0.5*(padding_2-padding_1)), 0, 0.445*panelZ ),         //at (0,0,0)
+					    G4ThreeVector( (0.5*panelXY+padding_1+0.5*(padding_2-padding_1)), Epoxy_ypos, 0.445*panelZ ),         //at (0,0,0)
 					     sipmLV,                        //its logical volume
 					     "sipmPV",                     //its name
 					     WorldLV,                      //its mother  volume
@@ -257,7 +293,7 @@ G4VPhysicalVolume* FPDetectorConstruction::Construct()
   
   // Rotate along y-axis (defined earlier for making the groove
   //  yRot->rotateY(90*deg);                                          // rotate 90 degree along Y-axis  
-  G4ThreeVector holeTrans( (0.5*panelXY+padding_1+0.5*(padding_2-padding_1)), 0, 0.445*panelZ);  
+  G4ThreeVector holeTrans( (0.5*panelXY+padding_1+0.5*(padding_2-padding_1)), Epoxy_ypos, 0.445*panelZ);  
 
   G4SubtractionSolid* solidWrappingHole =
     new G4SubtractionSolid("WrappingHole", solidWrapping, solidSensorHole, 0, holeTrans);
@@ -291,7 +327,7 @@ G4VPhysicalVolume* FPDetectorConstruction::Construct()
 
   // Put epoxy inside the Panel
   G4PVPlacement* EpoxyPV = new G4PVPlacement(yRot,                                        // no rotation
-					     G4ThreeVector(0.0, 0.0, 0.5*(panelZ - epoxyD)),         // Near the surface of the panel
+					     G4ThreeVector(0.0, Epoxy_ypos, 0.5*(panelZ - epoxyD)),         // Near the surface of the panel
 					     EpoxyLV,                                                                         //its logical volume
 					     "EpoxyPV",                                                                      //its name
 					     PanelLV,                           // its mother  volume
@@ -683,6 +719,17 @@ void FPDetectorConstruction::ConstructSDandField()
   sdManager->AddNewDetector(sipmSD);
   sipmLV->SetSensitiveDetector(sipmSD);
   
+}
+
+// split function
+void FPDetectorConstruction::split(const std::string &s, char delim, std::vector<std::string> &elems)
+{
+  std::stringstream ss;
+  ss.str(s);
+  std::string item;
+  while (std::getline(ss, item, delim)) {
+    elems.push_back(item);
+  }
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
